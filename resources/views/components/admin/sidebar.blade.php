@@ -29,6 +29,17 @@
                 </a>
             </li>
 
+            <!-- Kategories-->
+            <li class="{{ request()->routeIs('admin.categories.*') ? 'bg-gray-200 rounded-lg' : '' }}">
+                <a href="{{ route('admin.categories.index') }}" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Meja">
+                    <!-- icon Event -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7a2 2 0 0 1 2-2" />
+                    </svg>
+                    <span class="is-drawer-close:hidden">Manajemen Kategori</span>
+                </a>
+            </li>
+
             <!-- Meja item -->
             <li class="">
                 <a href="#" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Meja">
@@ -39,6 +50,7 @@
                     <span class="is-drawer-close:hidden">Manajemen Meja</span>
                 </a>
             </li>
+
             <!-- Order item -->
             <li class="">
                 <a href="#" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Order">
