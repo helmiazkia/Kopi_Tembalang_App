@@ -1,5 +1,7 @@
 @php use Illuminate\Support\Str; @endphp
 <x-layouts.admin title="Manajemen Menu">
+@include('admin.menu_management_tabs')
+
 
     {{-- ALERT --}}
     @if (session('success'))

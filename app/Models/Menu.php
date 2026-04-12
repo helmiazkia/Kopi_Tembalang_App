@@ -19,4 +19,8 @@ class Menu extends Model
     {
         return $this->belongsTo(Category::class);
     }
+    public function options()
+    {
+        return $this->hasMany(MenuOption::class);
+    }
 }

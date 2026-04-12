@@ -13,7 +13,7 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::all();
+        $categories = Category::latest()->get();
         return view('admin.categories.index', compact('categories'));
     }
 
@@ -30,15 +30,27 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:100'
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:100',
+                'image' => 'nullable|image|max:2048',
+                'description' => 'nullable|string',
+            ]);
 
-        Category::create([
-            'name' => $request->name
-        ]);
+            if ($request->hasFile('image')) {
+                $imageName = time() . '_' . uniqid() . '.' . $request->image->extension();
+                $request->image->move(public_path('images/category'), $imageName);
+                $validatedData['image'] = $imageName;
+            }
 
-        return back()->with('success', 'Kategori berhasil ditambahkan');
+            Category::create($validatedData);
+
+            return back()->with('success', 'Kategori berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'error' => $e->getMessage()
+            ]);
+        }
     }
     /**
      * Display the specified resource.
@@ -62,15 +74,34 @@ class CategoryController extends Controller
      */
     public function update(Request $request, Category $category)
     {
-        $request->validate([
-            'name' => 'required|string|max:100'
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:100',
+                'description' => 'nullable|string',
+                'image' => 'nullable|image|max:2048',
+            ]);
 
-        $category->update([
-            'name' => $request->name
-        ]);
+            if ($request->hasFile('image')) {
 
-        return back()->with('success', 'Kategori berhasil diupdate');
+                if ($category->image && file_exists(public_path('images/category/' . $category->image))) {
+                    unlink(public_path('images/category/' . $category->image));
+                }
+
+                $imageName = time() . '_' . uniqid() . '.' . $request->image->extension();
+                $request->image->move(public_path('images/category'), $imageName);
+
+                $validatedData['image'] = $imageName;
+            }
+
+
+            $category->update($validatedData);
+
+            return back()->with('success', 'Kategori berhasil diupdate');
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -78,8 +109,18 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category)
     {
-        $category->delete();
+        try {
+            if ($category->image && file_exists(public_path('images/category/' . $category->image))) {
+                unlink(public_path('images/category/' . $category->image));
+            }
 
-        return back()->with('success', 'Kategori berhasil dihapus');
+            $category->delete();
+
+            return back()->with('success', 'Kategori berhasil dihapus');
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }
