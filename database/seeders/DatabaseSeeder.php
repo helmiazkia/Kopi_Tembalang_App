@@ -23,6 +23,10 @@ class DatabaseSeeder extends Seeder
             MenuSeeder::class,
             MenuOptionSeeder::class,
             MenuOptionItemSeeder::class,
+            OrderSeeder::class,          
+            OrderItemSeeder::class,      
+            OrderItemOptionSeeder::class,
+            PaymentSeeder::class,
         ]);
     }
 }

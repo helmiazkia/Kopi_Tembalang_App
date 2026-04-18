@@ -3,19 +3,35 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Order;
 
 class Payment extends Model
 {
+
     protected $fillable = [
         'order_id',
-        'payment_method',
-        'payment_status',
-        'payment_reference',
+        'transaction_id',
+        'method',
+        'channel',
+        'amount',
+        'status',
         'paid_at'
     ];
+
+    protected $casts = [
+        'paid_at' => 'datetime',
+        'amount' => 'integer'
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELATIONS
+    |--------------------------------------------------------------------------
+    */
 
     public function order()
     {
         return $this->belongsTo(Order::class);
     }
+
 }

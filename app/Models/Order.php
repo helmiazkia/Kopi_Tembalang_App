@@ -3,6 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Table;
+use App\Models\OrderItem;
+use App\Models\Payment;
+use App\Models\OrderLog;
+use App\Models\Receipt;
+use App\Models\User;
 
 class Order extends Model
 {
@@ -16,9 +22,18 @@ class Order extends Model
         'status'
     ];
 
+    protected $casts = [
+        'total_price' => 'integer'
+    ];
+
     public function table()
     {
         return $this->belongsTo(Table::class);
+    }
+
+    public function cashier()
+    {
+        return $this->belongsTo(User::class, 'cashier_id');
     }
 
     public function items()

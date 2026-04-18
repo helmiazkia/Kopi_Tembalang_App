@@ -13,17 +13,17 @@ class DashboardController extends Controller
         $totalOrders = Order::count();
 
         $totalIncome = Payment::join('orders', 'payments.order_id', '=', 'orders.id')
-            ->where('payments.payment_status', 'paid')
+            ->where('payments.status', 'paid')
             ->sum('orders.total_price');
 
         $totalCash = Payment::join('orders', 'payments.order_id', '=', 'orders.id')
-            ->where('payments.payment_method', 'cash')
-            ->where('payments.payment_status', 'paid')
+            ->where('payments.method', 'cash')
+            ->where('payments.status', 'paid')
             ->sum('orders.total_price');
 
         $totalQris = Payment::join('orders', 'payments.order_id', '=', 'orders.id')
-            ->where('payments.payment_method', 'qris')
-            ->where('payments.payment_status', 'paid')
+            ->where('payments.method', 'qris')
+            ->where('payments.status', 'paid')
             ->sum('orders.total_price');
 
         return view('admin.dashboard', compact(

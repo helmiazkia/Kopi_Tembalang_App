@@ -21,4 +21,9 @@ class MenuOptionItem extends Model
     {
         return $this->hasMany(OrderItemOption::class);
     }
+    public function menuOption()
+    {
+        return $this->belongsTo(MenuOption::class);
+    }
+    
 }

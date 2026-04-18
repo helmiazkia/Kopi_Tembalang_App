@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Table;
+use BaconQrCode\Encoder\Encoder;
+use BaconQrCode\Common\ErrorCorrectionLevel;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Illuminate\Support\Str;
 
 class TableController extends Controller
 {
@@ -96,18 +97,58 @@ class TableController extends Controller
         }
     }
 
-    public function downloadQR(Table $table)
+    public function downloadQR(Request $request, Table $table)
     {
-        $qr = QrCode::format('png')
-            ->size(300)
-            ->generate($table->qr_code);
+        $format = strtolower($request->query('format', 'png'));
+        $format = $format === 'jpg' || $format === 'jpeg' ? 'jpg' : 'png';
+        $filename = 'table-' . $table->id . '.' . $format;
+        $mimeType = $format === 'png' ? 'image/png' : 'image/jpeg';
 
-        return response($qr)
-            ->header('Content-Type', 'image/png')
-            ->header(
-                'Content-Disposition',
-                'attachment; filename="table-' . $table->id . '.png"'
-            );
+        [$qrImage, $format] = $this->generateQrImage($table->qr_code, $format);
+
+        return response($qrImage, 200, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    private function generateQrImage(string $text, string $format = 'png', int $moduleSize = 10, int $marginModules = 4): array
+    {
+        $qrCode = Encoder::encode($text, ErrorCorrectionLevel::L());
+        $matrix = $qrCode->getMatrix();
+        $matrixSize = $matrix->getWidth();
+        $imageSize = ($matrixSize + ($marginModules * 2)) * $moduleSize;
+
+        $image = imagecreatetruecolor($imageSize, $imageSize);
+        $white = imagecolorallocate($image, 255, 255, 255);
+        $black = imagecolorallocate($image, 0, 0, 0);
+
+        imagefilledrectangle($image, 0, 0, $imageSize, $imageSize, $white);
+
+        for ($y = 0; $y < $matrixSize; ++$y) {
+            for ($x = 0; $x < $matrixSize; ++$x) {
+                if ($matrix->get($x, $y) === 1) {
+                    $x1 = ($x + $marginModules) * $moduleSize;
+                    $y1 = ($y + $marginModules) * $moduleSize;
+                    $x2 = $x1 + $moduleSize - 1;
+                    $y2 = $y1 + $moduleSize - 1;
+                    imagefilledrectangle($image, $x1, $y1, $x2, $y2, $black);
+                }
+            }
+        }
+
+        ob_start();
+
+        if ($format === 'jpg') {
+            imagejpeg($image, null, 90);
+        } else {
+            imagepng($image);
+        }
+
+        $imageData = ob_get_clean();
+        imagedestroy($image);
+
+        return [$imageData, $format];
     }
 
     /**

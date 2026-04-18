@@ -57,15 +57,15 @@
                             @endif
                         </td>
 
-                        <td>
+                        <td class="w-[120px] text-center">
                             {!! QrCode::size(100)->generate($table->qr_code) !!}
                         </td>
 
                         <td class="flex gap-2">
 
-                            <a href="{{ route('admin.tables.qr.download',$table->id) }}"
+                            <a href="{{ route('admin.tables.qr.download', ['table' => $table->id, 'format' => 'png']) }}"
                                 class="btn btn-sm btn-success">
-                                Download QR
+                                Download Qr Code
                             </a>
 
                             <button
