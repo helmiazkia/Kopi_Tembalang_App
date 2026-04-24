@@ -1,45 +1,78 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'Admin Dashboard' }}</title>
+    <title>{{ $title ?? 'Admin Dashboard' }} | Kopi Tembalang</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Menghilangkan scrollbar pada level body karena drawer sudah mengaturnya */
+        body {
+            overflow-x: hidden;
+        }
+    </style>
 </head>
 
-<body>
-    <div class="drawer lg:drawer-open w-full min-h-screen bg-gray-50">
+<body class="bg-slate-50 antialiased">
+    <div class="drawer lg:drawer-open h-screen">
         <input id="my-drawer-4" type="checkbox" class="drawer-toggle" />
-        <div class="drawer-content">
-            <!-- Navbar -->
-            <nav class="navbar w-full bg-base-300">
-                <label for="my-drawer-4" aria-label="open sidebar" class="btn btn-square btn-ghost lg:hidden">
-                    <!-- Sidebar toggle icon -->
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="my-1.5 inline-block size-4">
-                        <path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
-                        <path d="M9 4v16"></path>
-                        <path d="M14 10l2 2l-2 2"></path>
-                    </svg>
-                </label>
+
+        <div class="drawer-content flex flex-col h-screen overflow-y-auto">
+            <nav class="navbar sticky top-0 z-30 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 px-4">
+                <div class="flex-none lg:hidden">
+                    <label for="my-drawer-4" class="btn btn-square btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </label>
+                </div>
+
+                <div class="flex-1 px-2 mx-2 font-bold text-slate-700">
+                    <span class="hidden lg:inline text-xs opacity-50 uppercase tracking-widest mr-2">Halaman:</span>
+                    {{ $title ?? 'Dashboard' }}
+                </div>
+
+                <div class="flex-none gap-2">
+                    <div class="dropdown dropdown-end">
+                        <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+                            <div class="w-10 rounded-full border-2 border-[#D4E971]">
+                                <img alt="Admin" src="https://ui-avatars.com/api/?name=Admin+Kopi&background=D4E971&color=000" />
+                            </div>
+                        </div>
+                        <ul tabindex="0" class="mt-3 z-[1] p-2 shadow-xl menu menu-sm dropdown-content bg-base-100 rounded-box w-52 border border-slate-100">
+                            <li><a>Profil</a></li>
+                            <li><a>Pengaturan</a></li>
+                        </ul>
+                    </div>
+                </div>
             </nav>
-            <!-- Page content -->
-            {{ $slot }}
+
+            <main class="p-6 lg:p-8 flex-grow">
+                <div class="max-w-7xl mx-auto">
+                    {{ $slot }}
+                </div>
+            </main>
+
+            <footer class="footer footer-center p-6 bg-white border-t border-slate-200 text-slate-400">
+                <aside>
+                    <p class="text-xs font-medium">© {{ date('Y') }} <span class="text-slate-900 font-bold">Kopi Tembalang</span>. Built with ❤️ for better coffee experience.</p>
+                </aside>
+            </footer>
         </div>
 
         @include('components.admin.sidebar')
     </div>
 
-    <footer class="bg-light text-center py-3">
-        <div class="container">
-            <p>© {{ date('Y') }} MyLaravelApp. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {{-- Section untuk script tambahan --}}
     @stack('scripts')
 </body>
 

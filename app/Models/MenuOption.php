@@ -13,9 +13,9 @@ class MenuOption extends Model
         'type'
     ];
 
-    public function menu()
+    public function menus()
     {
-        return $this->belongsTo(Menu::class);
+        return $this->belongsToMany(Menu::class);
     }
 
     public function items()

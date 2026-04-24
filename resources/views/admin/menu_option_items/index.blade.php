@@ -1,6 +1,5 @@
 @php use Illuminate\Support\Str; @endphp
 <x-layouts.admin title="Menu Option Item">
-    @include('admin.menu_management_tabs')
 
 
     {{-- ALERT --}}

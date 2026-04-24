@@ -11,7 +11,7 @@ class MenuOptionSeeder extends Seeder
     {
         MenuOption::create([
 
-            'menu_id' => 1,
+            
             'name' => 'Ukuran Cup',
             'type' => 'select'
 
@@ -19,7 +19,7 @@ class MenuOptionSeeder extends Seeder
         ]);
         MenuOption::create([
 
-            'menu_id' => 1,
+       
             'name' => 'Gula',
             'type' => 'select'
 
@@ -27,7 +27,7 @@ class MenuOptionSeeder extends Seeder
         ]);
         MenuOption::create([
 
-            'menu_id' => 1,
+           
             'name' => 'Topping',
             'type' => 'checkbox'
 

@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('menu_options', function (Blueprint $table) {
+        Schema::create('menu_menu_option', function (Blueprint $table) {
             $table->id();
 
-            $table->string('name');
-            // contoh: ukuran, gula, topping
+            $table->foreignId('menu_id')
+                ->constrained()
+                ->cascadeOnDelete();
 
-            $table->enum('type', ['select', 'checkbox'])
-                ->default('select');
+            $table->foreignId('menu_option_id') 
+                ->constrained()
+                ->cascadeOnDelete();
 
             $table->timestamps();
         });
@@ -29,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('menu_options');
+        Schema::dropIfExists('menu_menu_option');
     }
 };

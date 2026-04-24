@@ -21,6 +21,6 @@ class Menu extends Model
     }
     public function options()
     {
-        return $this->hasMany(MenuOption::class);
+        return $this->belongsToMany(MenuOption::class);
     }
 }

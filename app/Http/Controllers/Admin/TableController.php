@@ -7,165 +7,115 @@ use App\Models\Table;
 use BaconQrCode\Encoder\Encoder;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use Illuminate\Http\Request;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class TableController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $tables = Table::latest()->get();
-
         return view('admin.tables.index', compact('tables'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        try {
+        $request->validate([
+            'table_number' => 'required|string|max:50|unique:tables,table_number'
+        ]);
 
-            $validatedData = $request->validate([
-                'table_number' => 'required|string|max:50|unique:tables,table_number'
-            ]);
+        $table = Table::create([
+            'table_number' => $request->table_number,
+            'status' => 'available'
+        ]);
 
-            $table = Table::create([
-                'table_number' => $request->table_number,
-                'status' => 'available'
-            ]);
+        $this->updateQr($table);
 
-            $table->qr_code = url('/menu?table=' . $table->id);
-            $table->save();
-
-            return back()->with('success', 'Meja berhasil ditambahkan');
-        } catch (\Exception $e) {
-
-            return back()->withErrors([
-                'error' => $e->getMessage()
-            ]);
-        }
+        return back()->with('success', 'Meja berhasil ditambahkan');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Table $table)
     {
-        try {
+        $request->validate([
+            'table_number' => 'required|string|max:50'
+        ]);
 
-            $validatedData = $request->validate([
-                'table_number' => 'required|string|max:50'
-            ]);
+        $table->update([
+            'table_number' => $request->table_number
+        ]);
 
-            $table->update($validatedData);
-            $table->qr_code = url('/menu?table=' . $table->id);
-            $table->save();
+        $this->updateQr($table);
 
-            return back()->with('success', 'Meja berhasil diupdate');
-        } catch (\Exception $e) {
-
-            return back()->withErrors([
-                'error' => $e->getMessage()
-            ]);
-        }
+        return back()->with('success', 'Meja berhasil diupdate');
     }
+
+    public function destroy(Table $table)
+    {
+        $table->delete();
+
+        return back()->with('success', 'Meja berhasil dihapus');
+    }
+
+    // ================= QR =================
 
     public function downloadQR(Request $request, Table $table)
     {
-        $format = strtolower($request->query('format', 'png'));
-        $format = $format === 'jpg' || $format === 'jpeg' ? 'jpg' : 'png';
-        $filename = 'table-' . $table->id . '.' . $format;
-        $mimeType = $format === 'png' ? 'image/png' : 'image/jpeg';
+        $format = in_array($request->query('format'), ['jpg','jpeg']) ? 'jpg' : 'png';
 
-        [$qrImage, $format] = $this->generateQrImage($table->qr_code, $format);
+        [$qrImage] = $this->generateQrImage($table->qr_code, $format);
 
         return response($qrImage, 200, [
-            'Content-Type' => $mimeType,
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Type' => $format === 'png' ? 'image/png' : 'image/jpeg',
+            'Content-Disposition' => 'attachment; filename="table-'.$table->id.'.'.$format.'"',
         ]);
     }
 
-    private function generateQrImage(string $text, string $format = 'png', int $moduleSize = 10, int $marginModules = 4): array
+    private function updateQr(Table $table)
+    {
+        // 🔥 gunakan route lebih clean
+        $table->qr_code = url('/menu/' . $table->id);
+        $table->save();
+    }
+
+    private function generateQrImage(string $text, string $format = 'png'): array
     {
         $qrCode = Encoder::encode($text, ErrorCorrectionLevel::L());
         $matrix = $qrCode->getMatrix();
+
+        $size = 10;
+        $margin = 4;
+
         $matrixSize = $matrix->getWidth();
-        $imageSize = ($matrixSize + ($marginModules * 2)) * $moduleSize;
+        $imageSize = ($matrixSize + ($margin * 2)) * $size;
 
         $image = imagecreatetruecolor($imageSize, $imageSize);
         $white = imagecolorallocate($image, 255, 255, 255);
         $black = imagecolorallocate($image, 0, 0, 0);
 
-        imagefilledrectangle($image, 0, 0, $imageSize, $imageSize, $white);
+        imagefill($image, 0, 0, $white);
 
-        for ($y = 0; $y < $matrixSize; ++$y) {
-            for ($x = 0; $x < $matrixSize; ++$x) {
-                if ($matrix->get($x, $y) === 1) {
-                    $x1 = ($x + $marginModules) * $moduleSize;
-                    $y1 = ($y + $marginModules) * $moduleSize;
-                    $x2 = $x1 + $moduleSize - 1;
-                    $y2 = $y1 + $moduleSize - 1;
-                    imagefilledrectangle($image, $x1, $y1, $x2, $y2, $black);
+        for ($y = 0; $y < $matrixSize; $y++) {
+            for ($x = 0; $x < $matrixSize; $x++) {
+                if ($matrix->get($x, $y)) {
+                    imagefilledrectangle(
+                        $image,
+                        ($x + $margin) * $size,
+                        ($y + $margin) * $size,
+                        ($x + $margin + 1) * $size,
+                        ($y + $margin + 1) * $size,
+                        $black
+                    );
                 }
             }
         }
 
         ob_start();
 
-        if ($format === 'jpg') {
-            imagejpeg($image, null, 90);
-        } else {
-            imagepng($image);
-        }
+        $format === 'jpg'
+            ? imagejpeg($image, null, 90)
+            : imagepng($image);
 
-        $imageData = ob_get_clean();
+        $output = ob_get_clean();
         imagedestroy($image);
 
-        return [$imageData, $format];
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Table $table)
-    {
-        try {
-
-            $table->delete();
-
-            return back()->with('success', 'Meja berhasil dihapus');
-        } catch (\Exception $e) {
-
-            return back()->withErrors([
-                'error' => $e->getMessage()
-            ]);
-        }
+        return [$output];
     }
 }

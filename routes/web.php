@@ -10,9 +10,11 @@ use App\Http\Controllers\Admin\MenuOptionItemController;
 use App\Http\Controllers\Admin\MenuOptionController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\TableController;
-
+use App\Http\Controllers\Customer\CartController;
+use App\Http\Controllers\Customer\CheckoutController;
+use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Cashier\OrderController as CashierOrderController;
-use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Cashier\PaymentController;
 use App\Http\Controllers\Cashier\ReceiptController;
 use App\Http\Controllers\OrderSimulationController;
 
@@ -74,18 +76,29 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
 
             // halaman kasir melihat order
-            Route::get('/orders', [CashierOrderController::class, 'index'])->name('orders.index');
+            Route::resource('orders', CashierOrderController::class)->only(['index', 'create', 'store']);
 
-            Route::get('/orders/create', [CashierOrderController::class, 'create'])->name('orders.create');
 
-            Route::post('/orders', [CashierOrderController::class, 'store'])->name('orders.store');
 
-            Route::post('/orders/{id}/pay-cash', [CashierOrderController::class, 'payCash'])->name('orders.payCash');
+            Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
+            Route::get('payments/{order}', [PaymentController::class, 'show'])->name('payments.show');
+            Route::post('payments/{order}/pay', [PaymentController::class, 'pay'])->name('payments.pay');
+            
         });
 });
 
+Route::get('/menu/{table}', [CustomerOrderController::class, 'index']);
+Route::get('/menu/{table}/{menu}', [CustomerOrderController::class, 'show']);
+Route::post('/menu/{table}', [CustomerOrderController::class, 'store']);
+Route::get('/cart', [CartController::class, 'index']);
 
-Route::get('/order', [OrderSimulationController::class, 'index']);
-Route::post('/order', [OrderSimulationController::class, 'store']);
+Route::get('/order/{order}/qr', fn($order) => view('customer.qr', compact('order')))->name('customer.qr');
+Route::get('/order/{order}/success', fn($order) => view('customer.success', compact('order')))->name('customer.success');
+
+Route::get('/checkout', [\App\Http\Controllers\Customer\CheckoutController::class, 'index']);
+Route::post('/checkout', [\App\Http\Controllers\Customer\CheckoutController::class, 'store']);
+
+Route::get('/payment/{order}', [\App\Http\Controllers\Customer\PaymentController::class, 'index'])->name('customer.payment');
+Route::post('/payment/{order}', [\App\Http\Controllers\Customer\PaymentController::class, 'process']);
 
 require __DIR__ . '/auth.php';

@@ -21,6 +21,7 @@
                         <th>Channel</th>
                         <th>Status</th>
                         <th>Kasir</th>
+                        <th>Jenis Order</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -34,6 +35,7 @@
                         <td>{{ $index+1 }}</td>
 
                         <td>#{{ $order->id }}</td>
+
 
                         <td>{{ $order->table->table_number }}</td>
 
@@ -103,6 +105,7 @@
                         <td>
                             {{ $order->cashier->name ?? '-' }}
                         </td>
+                        <td>{{ $order->order_type}}</td>
 
                         <td>
 
@@ -110,6 +113,7 @@
                                 class="btn btn-sm btn-info"
                                 onclick="openDetailModal(this)"
                                 data-id="{{ $order->id }}"
+                                data-order_type="{{ $order->order_type}}"
                                 data-table="{{ $order->table->table_number }}"
                                 data-customer="{{ $order->customer_name }}"
                                 data-total="{{ number_format($order->total_price) }}"
@@ -150,6 +154,7 @@
             <p><b>Status:</b> <span id="detail_status"></span></p>
             <p><b>Payment:</b> <span id="detail_payment"></span></p>
             <p><b>Channel:</b> <span id="detail_channel"></span></p>
+            <p><b>Jenis Order:</b> <span id="detail_order_type"></span></p>
             <p><b>Total:</b> Rp <span id="detail_total"></span></p>
 
             <hr class="my-4">
@@ -181,6 +186,7 @@
             const status = btn.dataset.status
             const payment = btn.dataset.payment
             const channel = btn.dataset.channel
+            const order_type = btn.dataset.order_type
             const items = JSON.parse(btn.dataset.items)
 
             document.getElementById('detail_id').innerText = id
@@ -190,6 +196,8 @@
             document.getElementById('detail_status').innerText = status
             document.getElementById('detail_payment').innerText = payment
             document.getElementById('detail_channel').innerText = channel
+            document.getElementById('detail_order_type').innerText = order_type
+
 
             let list = ''
 
@@ -234,4 +242,4 @@ ${opt.price > 0 ? `( +Rp ${opt.price} )` : ``}
         }
     </script>
 
-</x-layouts.admin>  
+</x-layouts.admin>
