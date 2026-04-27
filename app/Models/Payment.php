@@ -15,6 +15,7 @@ class Payment extends Model
         'channel',
         'amount',
         'status',
+        'snap_token',
         'paid_at'
     ];
 

@@ -3,40 +3,24 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
 use App\Models\Payment;
-use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
-    // 🔥 HALAMAN PILIH PEMBAYARAN
-    public function show(Order $order)
+    public function show($snapToken)
     {
-        return view('cashier.payment.show', compact('order'));
-    }
+        $payment = Payment::where('snap_token', $snapToken)->first();
 
-    // 🔥 PROSES BAYAR
-    public function pay(Request $request, Order $order)
-    {
-        $request->validate([
-            'method' => 'required|in:cash,qris'
+        if (!$payment) {
+            abort(404, 'Payment tidak ditemukan');
+        }
+
+        $order = $payment->order;
+
+        return view('cashier.payment.qris', [
+            'snapToken' => $payment->snap_token,
+            'order' => $order,
+            'payment' => $payment
         ]);
-
-        // simpan payment
-        Payment::create([
-            'order_id' => $order->id,
-            'method' => $request->method,
-            'amount' => $order->total_price,
-            'status' => 'paid',
-            'paid_at' => now()
-        ]);
-
-        // update status order
-        $order->update([
-            'status' => 'paid'
-        ]);
-
-        return redirect()->route('cashier.orders.index')
-            ->with('success', 'Pembayaran berhasil');
     }
 }

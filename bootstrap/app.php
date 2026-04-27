@@ -12,8 +12,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+
+        // 🔥 ALIAS ROLE
         $middleware->alias([
             'role' => RoleMiddleware::class,
+        ]);
+
+        // 🔥 FIX MIDTRANS CALLBACK (ANTI 419)
+        $middleware->validateCsrfTokens(except: [
+            'midtrans/callback',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

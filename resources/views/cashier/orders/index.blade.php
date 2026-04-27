@@ -1,4 +1,6 @@
 <x-layouts.cashier title="Kasir POS">
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="{{ config('midtrans.clientKey') }}"></script>
 
     <style>
         .menu-card {
@@ -205,6 +207,7 @@
             {{-- ================= CART SECTION (KANAN) ================= --}}
             <div class="relative">
                 <form method="POST" action="{{ route('cashier.orders.store') }}" id="pos-form">
+
                     @csrf
                     <div class="bg-white rounded-2xl border border-gray-100 p-5 sticky top-5 shadow-lg">
                         <div class="flex justify-between items-center mb-5">
@@ -213,6 +216,17 @@
                                 0
                             </span>
                         </div>
+                        <div id="pending-payment-box" class="hidden bg-yellow-50 border border-yellow-200 p-3 rounded-xl mt-3">
+                            <p class="text-xs text-gray-500">Pembayaran Pending</p>
+                            <p id="pending-info" class="text-sm font-bold text-gray-800"></p>
+
+                            <button type="button" onclick="resumePayment()"
+                                class="w-full mt-2 bg-orange-500 text-white py-2 rounded-xl text-sm font-bold">
+                                🔁 Lanjutkan Pembayaran
+                            </button>
+                        </div>
+
+                        <input type="hidden" name="payment_method" id="payment_method" required>
 
                         <div class="space-y-3">
                             <input type="text" name="customer_name" placeholder="Nama pelanggan" required
@@ -259,7 +273,7 @@
                                 <strong id="total-display" class="text-xl text-gray-900">Rp 0</strong>
                             </div>
 
-                            <button type="submit" id="submit-btn"
+                            <button type="button" id="submit-btn" onclick="openPaymentModal()"
                                 class="w-full bg-violet-600 hover:bg-violet-700 text-white py-3.5 rounded-xl text-sm font-bold shadow-md transition-all active:scale-[0.98]">
                                 BUAT PESANAN
                             </button>
@@ -269,50 +283,111 @@
             </div>
 
         </div>
-    </div>
+        {{-- ================= MODAL DETAIL & OPTION ================= --}}
+        <div id="modal-overlay" class="modal-overlay" onclick="closeModalOutside(event)">
+            <div class="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl mx-4" onclick="event.stopPropagation()">
+                <div class="relative">
+                    <img id="modal-img" class="w-full h-48 object-cover">
+                    <button type="button" onclick="closeModalOutside()" class="absolute top-3 right-3 bg-white/80 rounded-full p-1 shadow-sm">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
 
-    {{-- ================= MODAL DETAIL & OPTION ================= --}}
-    <div id="modal-overlay" class="modal-overlay" onclick="closeModalOutside(event)">
-        <div class="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl mx-4" onclick="event.stopPropagation()">
-            <div class="relative">
-                <img id="modal-img" class="w-full h-48 object-cover">
-                <button type="button" onclick="closeModalOutside()" class="absolute top-3 right-3 bg-white/80 rounded-full p-1 shadow-sm">
-                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
+                <div class="p-5">
+                    <div class="mb-4">
+                        <h3 id="modal-name" class="text-lg font-bold text-gray-800"></h3>
+                        <p id="modal-base-price" class="text-sm text-violet-600 font-semibold"></p>
+                    </div>
+
+                    <div id="modal-options" class="space-y-4 mb-4">
+                        {{-- Opsi menu akan muncul di sini via JS --}}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Catatan Item</label>
+                        <textarea id="modal-note" rows="2"
+                            class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-violet-200 focus:border-violet-500"
+                            placeholder="Contoh: Less ice, pedas sedang..."></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center p-5 bg-gray-50 border-t">
+                    <div>
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Subtotal</p>
+                        <strong id="modal-total" class="text-lg text-gray-800">Rp 0</strong>
+                    </div>
+                    <button type="button" onclick="confirmAdd()"
+                        class="bg-violet-600 hover:bg-violet-700 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-sm transition-all">
+                        SIMPAN
+                    </button>
+                </div>
             </div>
+        </div>
 
-            <div class="p-5">
-                <div class="mb-4">
-                    <h3 id="modal-name" class="text-lg font-bold text-gray-800"></h3>
-                    <p id="modal-base-price" class="text-sm text-violet-600 font-semibold"></p>
+        {{-- ================= MODAL PAYMENT ================= --}}
+        <div id="payment-modal" class="modal-overlay">
+            <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl">
+
+                <h2 class="text-lg font-bold mb-4 text-center">
+                    Konfirmasi Pesanan
+                </h2>
+
+                <p class="text-sm text-gray-500 text-center mb-5">
+                    Pilih metode pembayaran
+                </p>
+
+                {{-- STEP 1 --}}
+                <div id="payment-step-1" class="flex gap-3">
+                    <button type="button" onclick="closePaymentModal()"
+                        class="w-1/2 py-3 rounded-xl bg-gray-100 font-semibold">
+                        Batal
+                    </button>
+
+                    <button type="button" onclick="showPaymentMethods()"
+                        class="w-1/2 py-3 rounded-xl bg-violet-600 text-white font-semibold">
+                        Lanjut
+                    </button>
                 </div>
 
-                <div id="modal-options" class="space-y-4 mb-4">
-                    {{-- Opsi menu akan muncul di sini via JS --}}
+                {{-- STEP 2 --}}
+                <div id="payment-step-2" class="hidden space-y-3 mt-3">
+
+                    <button type="button" onclick="submitPayment('cash')"
+                        class="w-full py-3 rounded-xl bg-green-600 text-white font-bold">
+                        💵 Cash
+                    </button>
+                    <button type="button" onclick="submitPayment('qris')"
+                        class="w-full py-3 rounded-xl bg-blue-600 text-white font-bold">
+                        📱 QRIS
+                    </button>
+
                 </div>
 
-                <div class="mb-4">
-                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Catatan Item</label>
-                    <textarea id="modal-note" rows="2"
-                        class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-violet-200 focus:border-violet-500"
-                        placeholder="Contoh: Less ice, pedas sedang..."></textarea>
-                </div>
             </div>
+        </div>
 
-            <div class="flex justify-between items-center p-5 bg-gray-50 border-t">
-                <div>
-                    <p class="text-[10px] text-gray-400 uppercase font-bold">Subtotal</p>
-                    <strong id="modal-total" class="text-lg text-gray-800">Rp 0</strong>
-                </div>
-                <button type="button" onclick="confirmAdd()"
-                    class="bg-violet-600 hover:bg-violet-700 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-sm transition-all">
-                    SIMPAN
-                </button>
+        {{-- ================= SUCCESS MODAL ================= --}}
+        <div id="success-modal" class="modal-overlay">
+            <div class="bg-white rounded-2xl p-6 text-center w-80">
+
+                <h2 class="text-lg font-bold text-green-600 mb-2">
+                    ✅ Pembayaran Berhasil
+                </h2>
+
+                <p class="text-sm text-gray-500 mb-4">
+                    Sedang memproses pesanan...
+                </p>
+
+                <div class="animate-spin w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full mx-auto"></div>
+
             </div>
         </div>
     </div>
+
+
+
 
     <script>
         function applyExtraFilter(key, value) {
@@ -385,6 +460,7 @@
                 orderContainer.classList.add('grid-cols-2');
             }
         }
+
 
         orderType.addEventListener('change', toggleTable);
         // Jalankan saat halaman pertama kali dimuat
@@ -540,5 +616,259 @@
             btn.disabled = true
             btn.innerText = 'MEMPROSES...'
         })
+
+
+        function showPaymentMethods() {
+            document.getElementById('payment-step-1').classList.add('hidden')
+            document.getElementById('payment-step-2').classList.remove('hidden')
+        }
+
+        function openPaymentModal() {
+
+            const orderType = document.getElementById('order_type').value
+            const tableSelect = document.querySelector('select[name="table_id"]')
+
+            if (cart.length === 0) {
+                alert('Pilih menu dulu!')
+                return
+            }
+
+            if (orderType === 'dine_in' && !tableSelect.value) {
+                alert('Pilih nomor meja!')
+                return
+            }
+
+            // reset step
+            document.getElementById('payment-step-1').classList.remove('hidden')
+            document.getElementById('payment-step-2').classList.add('hidden')
+
+            document.getElementById('payment-modal').classList.add('show')
+        }
+        // ================= PAYMENT MODAL =================
+
+        function openPaymentModal() {
+
+            const orderType = document.getElementById('order_type').value
+            const tableSelect = document.querySelector('select[name="table_id"]')
+
+            if (cart.length === 0) {
+                alert('Pilih menu dulu!')
+                return
+            }
+
+            if (orderType === 'dine_in' && !tableSelect.value) {
+                alert('Pilih nomor meja!')
+                return
+            }
+
+            document.getElementById('payment-modal').classList.add('show')
+        }
+
+        function closePaymentModal() {
+            document.getElementById('payment-modal').classList.remove('show')
+
+            document.getElementById('payment-step-1').classList.remove('hidden')
+            document.getElementById('payment-step-2').classList.add('hidden')
+        }
+
+        // ================= SUCCESS =================
+        function showSuccess(orderId) {
+            document.getElementById('success-modal').classList.add('show')
+
+            let interval = setInterval(() => {
+
+                fetch('/api/check-payment/' + orderId)
+                    .then(res => res.json())
+                    .then(res => {
+
+                        if (res.status === 'paid') {
+                            clearInterval(interval)
+                            localStorage.removeItem('pending_payment')
+                            window.location.href = '/cashier/receipt/' + res.order_id
+                        }
+
+                        if (res.status === 'expired' || res.status === 'failed') {
+                            clearInterval(interval)
+                            localStorage.removeItem('pending_payment')
+                            alert("Pembayaran gagal / expired")
+                        }
+
+                    })
+
+            }, 2000)
+        }
+
+        // ================= WAITING =================
+        function showWaiting(orderId) {
+
+            alert('Menunggu pembayaran...')
+
+            let interval = setInterval(() => {
+
+                fetch('/api/check-payment/' + orderId)
+                    .then(res => res.json())
+                    .then(res => {
+
+                        if (res.status === 'paid') {
+                            clearInterval(interval)
+                            localStorage.removeItem('pending_payment')
+                            window.location.href = '/cashier/receipt/' + res.order_id
+                        }
+
+                        if (res.status === 'expired' || res.status === 'failed') {
+                            clearInterval(interval)
+                            localStorage.removeItem('pending_payment')
+                            alert("Pembayaran gagal / expired")
+                        }
+
+                    })
+
+            }, 2000)
+        }
+
+        // ================= SUBMIT PAYMENT =================
+        function submitPayment(method) {
+
+            document.getElementById('payment_method').value = method
+
+            const form = document.getElementById('pos-form')
+            const formData = new FormData(form)
+
+            fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(res => {
+
+                    // CASH
+                    if (res.type === 'cash') {
+                        window.location.href = '/cashier/receipt/' + res.order_id
+                        return
+                    }
+
+                    const snapToken = res.snap_token
+                    const orderId = res.order_id
+
+                    const total = document.getElementById('total-display').innerText;
+                    const customer = document.querySelector('input[name="customer_name"]').value;
+
+                    localStorage.setItem('pending_payment', JSON.stringify({
+                        order_id: orderId,
+                        snap_token: snapToken,
+                        total: total,
+                        customer: customer,
+                        expired_at: Date.now() + (10 * 60 * 1000)
+                    }));
+
+                    snap.pay(snapToken, {
+
+                        onSuccess: function(result) {
+                            showSuccess(orderId)
+                            
+                        },
+
+                        onPending: function(result) {
+                            showWaiting(orderId)
+                        },
+
+                        onError: function(result) {
+                            alert("Pembayaran gagal")
+                        },
+
+                        // 🔥 FIX UTAMA DI SINI
+                        onClose: function() {
+                            alert("Pembayaran ditutup, bisa dilanjutkan sebelum waktu habis");
+                        }
+                    });
+
+                })
+                .catch(error => {
+                    console.error('submitPayment error:', error)
+                    alert('Terjadi error saat memproses pembayaran.')
+                })
+        }
+
+        // ================= RESUME PAYMENT =================
+        function resumePayment() {
+
+            const data = JSON.parse(localStorage.getItem('pending_payment'));
+
+            if (!data) {
+                alert('Tidak ada pembayaran pending');
+                return;
+            }
+
+            // cek expired
+            if (Date.now() > data.expired_at) {
+                localStorage.removeItem('pending_payment');
+                alert('Waktu pembayaran sudah habis');
+                return;
+            }
+
+            snap.pay(data.snap_token, {
+
+                onSuccess: function(result) {
+                    showSuccess(data.order_id)
+                },
+
+                onPending: function(result) {
+                    showWaiting(data.order_id)
+                },
+
+                onError: function(result) {
+                    alert("Pembayaran gagal");
+                },
+
+                onClose: function() {
+                    alert("Masih bisa dilanjutkan");
+                }
+            });
+        }
+
+        // ================= CHECK AUTO =================
+        function checkPendingPayment() {
+
+            const data = JSON.parse(localStorage.getItem('pending_payment'));
+
+            if (!data) return;
+
+            fetch('/api/check-payment/' + data.order_id)
+                .then(res => res.json())
+                .then(res => {
+
+                    if (res.status === 'expired' || res.status === 'failed') {
+                        localStorage.removeItem('pending_payment');
+                        return;
+                    }
+
+                    if (Date.now() > data.expired_at) {
+                        localStorage.removeItem('pending_payment');
+                    }
+
+                });
+        }
+
+        window.onload = function() {
+            checkPendingPayment();
+            showPendingUI();
+        }
+
+        function showPendingUI() {
+
+            const data = JSON.parse(localStorage.getItem('pending_payment'));
+            if (!data) return;
+
+            const box = document.getElementById('pending-payment-box');
+            const info = document.getElementById('pending-info');
+
+            box.classList.remove('hidden');
+
+            info.innerText = `Order #${data.order_id} • ${data.customer} • ${data.total}`;
+        }
     </script>
 </x-layouts.cashier>

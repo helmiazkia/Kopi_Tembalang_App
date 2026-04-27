@@ -7,15 +7,18 @@ use App\Models\Order;
 
 class ReceiptController extends Controller
 {
-    public function show($id)
+    public function show(Order $order)
     {
-        $order = Order::with([
-            'table',
-            'items.menu',
-            'items.options.optionItem.menuOption',
-            'payment'
-        ])->findOrFail($id);
+        // 🔥 PASTIKAN ORDER SUDAH DIBAYAR
+        if ($order->status !== 'paid') {
+            abort(403, 'Order belum dibayar');
+        }
 
-        return view('cashier.receipt.index', compact('order'));
+        $order->load([
+            'items.menu',
+            'items.options.optionItem'
+        ]);
+
+        return view('cashier.receipt.show', compact('order'));
     }
 }

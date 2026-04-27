@@ -10,7 +10,11 @@ use App\Models\Table;
 use App\Models\Category;
 use App\Models\OrderItem;
 use App\Models\OrderItemOption;
+use App\Models\Payment;
+use Midtrans\Transaction;
 use Illuminate\Http\Request;
+use Midtrans\Snap;
+use Midtrans\Config;
 
 class OrderController extends Controller
 {
@@ -51,23 +55,18 @@ class OrderController extends Controller
         $request->validate([
             'order_type' => 'required',
             'table_id' => 'nullable|required_if:order_type,dine_in',
-            'items' => 'required|array'
+            'items' => 'required|array',
+            'payment_method' => 'required|in:cash,qris'
         ]);
 
-        // 🔥 CREATE ORDER
+        // ================= ORDER =================
         $order = Order::create([
-            'table_id' => $request->order_type == 'dine_in'
-                ? $request->table_id
-                : null,
-
+            'table_id' => $request->order_type == 'dine_in' ? $request->table_id : null,
             'cashier_id' => auth()->id(),
-
             'order_type' => $request->order_type,
             'customer_name' => $request->customer_name ?? 'Walk In',
             'phone' => $request->phone,
-
-            'notes' => $request->notes, // GLOBAL NOTES
-
+            'notes' => $request->notes,
             'total_price' => 0,
             'status' => 'pending'
         ]);
@@ -79,37 +78,81 @@ class OrderController extends Controller
             $menu = Menu::find($item['menu_id']);
             if (!$menu) continue;
 
-            // 🔥 CREATE ITEM
             $orderItem = OrderItem::create([
                 'order_id' => $order->id,
                 'menu_id' => $menu->id,
-                'qty' => 1, // karena sistem 1 item = 1
+                'qty' => 1,
                 'price' => $menu->price,
                 'subtotal' => 0,
-                'notes' => $item['notes'] ?? null // ITEM NOTES
+                'notes' => $item['notes'] ?? null
             ]);
 
-            // 🔥 PROCESS OPTION
             $optionTotal = $this->processOptions($orderItem, $item);
 
-            // 🔥 FIX: TANPA QTY
             $subtotal = $menu->price + $optionTotal;
 
-            $orderItem->update([
-                'subtotal' => $subtotal
-            ]);
+            $orderItem->update(['subtotal' => $subtotal]);
 
             $total += $subtotal;
         }
 
-        // 🔥 UPDATE TOTAL ORDER
-        $order->update([
-            'total_price' => $total
+        $order->update(['total_price' => $total]);
+
+        // ================= PAYMENT =================
+        $transactionId = 'ORDER-' . time() . '-' . $order->id;
+
+        $payment = Payment::create([
+            'order_id' => $order->id,
+            'transaction_id' => $transactionId,
+            'method' => $request->payment_method,
+            'channel' => null, // 🔥 kosong dulu
+            'amount' => $total,
+            'status' => $request->payment_method === 'cash' ? 'paid' : 'pending',
+            'paid_at' => $request->payment_method === 'cash' ? now() : null
         ]);
 
-        return redirect()
-            ->route('cashier.orders.index')
-            ->with('success', 'Order berhasil dibuat!');
+        // ================= CASH =================
+        if ($request->payment_method === 'cash') {
+
+            $order->update(['status' => 'paid']);
+
+            return response()->json([
+                'type' => 'cash',
+                'order_id' => $order->id
+            ]);
+        }
+
+        // ================= QRIS =================
+        Config::$serverKey = config('midtrans.serverKey');
+        Config::$isProduction = false;
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => $transactionId,
+                'gross_amount' => (int) $total,
+            ],
+
+
+            // 🔥 EXPIRY
+            'expiry' => [
+                'start_time' => now()->format('Y-m-d H:i:s O'),
+                'unit' => 'minute',
+                'duration' => 10
+            ]
+        ];
+
+        $snapToken = Snap::getSnapToken($params);
+
+        $payment->update([
+            'snap_token' => $snapToken,
+            'expired_at' => now()->addMinutes(10)
+        ]);
+
+        return response()->json([
+            'type' => 'qris',
+            'snap_token' => $snapToken,
+            'order_id' => $order->id
+        ]);
     }
 
     /**
@@ -121,7 +164,7 @@ class OrderController extends Controller
 
         if (empty($item['options'])) return 0;
 
-        foreach ($item['options'] as $optionId => $optionItemId) {
+        foreach ($item['options'] as $optionItemId) {
 
             $optionItem = MenuOptionItem::find($optionItemId);
             if (!$optionItem) continue;
@@ -137,5 +180,43 @@ class OrderController extends Controller
         }
 
         return $optionTotal;
+    }
+
+    public function cancel(Order $order)
+    {
+        $payment = $order->payment;
+
+        if (!$payment) {
+            return response()->json(['message' => 'Payment tidak ditemukan'], 404);
+        }
+
+        // ==============================
+        // 🔥 UPDATE DATABASE
+        // ==============================
+        $order->update([
+            'status' => 'cancelled'
+        ]);
+
+        $payment->update([
+            'status' => 'expired'
+        ]);
+
+        // ==============================
+        // 🔥 CANCEL KE MIDTRANS (OPTIONAL)
+        // ==============================
+        try {
+            if ($payment->transaction_id) {
+                \Midtrans\Config::$serverKey = config('midtrans.serverKey');
+                \Midtrans\Config::$isProduction = false;
+
+                Transaction::cancel($payment->transaction_id);
+            }
+        } catch (\Exception $e) {
+            \Log::error("Midtrans cancel gagal: " . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true
+        ]);
     }
 }

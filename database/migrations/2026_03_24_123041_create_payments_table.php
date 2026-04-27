@@ -19,8 +19,11 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
+        
             $table->string('transaction_id')->nullable();
+            $table->text('snap_token')->nullable(); // 🔥 WAJIB
 
+            // 🔥 METODE
             $table->enum('method', [
                 'cash',
                 'qris',
@@ -31,8 +34,10 @@ return new class extends Migration
 
             $table->string('channel')->nullable();
 
+            
             $table->integer('amount');
 
+        
             $table->enum('status', [
                 'pending',
                 'paid',
@@ -40,7 +45,9 @@ return new class extends Migration
                 'expired'
             ])->default('pending');
 
+        
             $table->timestamp('paid_at')->nullable();
+            
 
             $table->timestamps();
         });
