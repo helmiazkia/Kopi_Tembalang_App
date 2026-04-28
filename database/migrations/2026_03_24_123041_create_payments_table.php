@@ -12,16 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('payments', function (Blueprint $table) {
-
             $table->id();
 
             $table->foreignId('order_id')
                 ->constrained()
                 ->cascadeOnDelete();
 
-        
             $table->string('transaction_id')->nullable();
-            $table->text('snap_token')->nullable(); // 🔥 WAJIB
+            $table->text('snap_token')->nullable();
 
             // 🔥 METODE
             $table->enum('method', [
@@ -33,11 +31,9 @@ return new class extends Migration
             ]);
 
             $table->string('channel')->nullable();
-
-            
             $table->integer('amount');
 
-        
+            // 🔥 STATUS
             $table->enum('status', [
                 'pending',
                 'paid',
@@ -45,10 +41,10 @@ return new class extends Migration
                 'expired'
             ])->default('pending');
 
-        
-            $table->timestamp('paid_at')->nullable();
-            
+            // 🔥 KOLOM BARU: UNTUK TIMEOUT PEMBAYARAN DIGITAL
+            $table->timestamp('expired_at')->nullable();
 
+            $table->timestamp('paid_at')->nullable();
             $table->timestamps();
         });
     }

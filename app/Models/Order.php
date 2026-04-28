@@ -16,6 +16,7 @@ class Order extends Model
         'table_id',
         'cashier_id',
         'customer_name',
+        'email',
         'phone',
         'notes',
         'total_price',

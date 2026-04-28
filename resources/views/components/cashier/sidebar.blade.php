@@ -69,6 +69,16 @@
                 </a>
             </li>
 
+            <li>
+                <a href="{{ route('cashier.orderList.index') }}" class="flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 {{ request()->routeIs('cashier.orderList.*') ? 'bg-[#D4E971] text-black shadow-lg shadow-[#D4E971]/30 active-indicator' : 'hover:bg-base-200 text-base-content/80' }} is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Payment">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                        <line x1="4" x2="4" y1="22" y2="15" />
+                    </svg>
+                    <span class="is-drawer-close:hidden font-bold text-[14px]">Order List</span>
+                </a>
+            </li>
+
           
         </ul>
 

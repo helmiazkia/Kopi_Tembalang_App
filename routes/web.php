@@ -12,16 +12,18 @@ use App\Http\Controllers\Admin\MenuOptionController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\TableController;
 
+
 // CUSTOMER
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\CheckoutController;
-use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
-use App\Http\Controllers\Customer\PaymentController as CustomerPaymentController;
+use App\Http\Controllers\Customer\OrderController;
+
 
 // CASHIER
 use App\Http\Controllers\Cashier\OrderController as CashierOrderController;
-use App\Http\Controllers\Cashier\PaymentController as CashierPaymentController;
+use App\Http\Controllers\Cashier\OrderListController;
 use App\Http\Controllers\Cashier\ReceiptController;
+
 
 // MIDTRANS
 use App\Http\Controllers\MidtransController;
@@ -73,12 +75,14 @@ Route::middleware('auth')->group(function () {
             // RECEIPT
             Route::get('receipt/{order}', [ReceiptController::class, 'show'])
                 ->name('receipt.show');
+            Route::get('orderList', [OrderListController::class, 'index'])->name('orderList.index');
 
-            // (OPSIONAL - kalau masih dipakai)
-            Route::get('payment/{snapToken}', [CashierPaymentController::class, 'show'])
-                ->name('payment.show');
-            Route::post('orders/{order}/cancel', [CashierOrderController::class, 'cancel'])
-                ->name('orders.cancel');
+            Route::post('orderList/scan', [OrderListController::class, 'scan'])
+                ->name('orderList.scan');
+            Route::get('orderList/{order}/snap-token', [OrderListController::class, 'getSnapToken'])
+                ->name('orderList.snap-token');
+            Route::get('/orderList/snap/{order}', [OrderListController::class, 'getSnapToken'])->name('orderList.snap');
+            Route::get('/orderList/pay/{order}', [OrderListController::class, 'pay'])->name('orderList.pay');
         });
 
     // 🔥 API ROUTES (UNTUK CHECK PAYMENT STATUS)
@@ -96,30 +100,22 @@ Route::middleware('auth')->group(function () {
 // ================= CUSTOMER =================
 
 // MENU
-Route::get('/menu/{table}', [CustomerOrderController::class, 'index']);
-Route::get('/menu/{table}/{menu}', [CustomerOrderController::class, 'show']);
-Route::post('/menu/{table}', [CustomerOrderController::class, 'store']);
+// routes/web.php
+// Route Menu
+Route::get('/menu/{table}', [OrderController::class, 'index'])->name('customer.menu');
+Route::get('/menu/{table}/{menu}', [OrderController::class, 'show'])->name('customer.menu.show');
 
-// CART
-Route::get('/cart', [CartController::class, 'index']);
+// Route Keranjang (INI YANG KURANG)
+Route::get('/cart', [CartController::class, 'index'])->name('customer.cart.index');
+Route::post('/cart/sync', [CartController::class, 'sync'])->name('customer.cart.sync');
 
-// PAYMENT FLOW
-Route::get('/order/{order}/qr', fn($order) => view('customer.qr', compact('order')))
-    ->name('customer.qr');
-
-Route::get('/order/{order}/success', fn($order) => view('customer.success', compact('order')))
-    ->name('customer.success');
-
-// CHECKOUT
-Route::get('/checkout', [CheckoutController::class, 'index']);
-Route::post('/checkout', [CheckoutController::class, 'store']);
-
-// CUSTOMER PAYMENT
-Route::get('/payment/{order}', [CustomerPaymentController::class, 'index'])
-    ->name('customer.payment');
-
-
-Route::post('/payment/{order}', [CustomerPaymentController::class, 'process']);
+// Route Checkout & Payment
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('customer.checkout.index');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('customer.checkout.store');
+// routes/web.php
+Route::get('/payment/process/{order}', [CheckoutController::class, 'process'])->name('customer.payment.process');
+// PAYMENT FLOw 
+Route::get('/payment/success/{order}', [CheckoutController::class, 'success'])->name('customer.payment.success');
 
 
 // ================= 🔥 API / AJAX =================

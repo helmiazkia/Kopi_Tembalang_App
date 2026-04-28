@@ -11,14 +11,13 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
 
-            // 🔥 FIX DI SINI
             $table->foreignId('table_id')
                 ->nullable()
                 ->constrained()
                 ->nullOnDelete();
 
             $table->enum('order_type', ['dine_in', 'takeaway'])
-                ->default('dine_in');
+                ->default('takeaway');
 
             $table->foreignId('cashier_id')
                 ->nullable()
@@ -26,6 +25,8 @@ return new class extends Migration
                 ->nullOnDelete();
 
             $table->string('customer_name');
+            $table->string('email')->nullable(); 
+            
             $table->string('phone')->nullable();
             $table->text('notes')->nullable();
 

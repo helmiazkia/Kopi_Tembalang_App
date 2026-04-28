@@ -16,6 +16,7 @@ class Payment extends Model
         'amount',
         'status',
         'snap_token',
+        'expired_at',
         'paid_at'
     ];
 
