@@ -52,9 +52,10 @@ class CheckoutController extends Controller
                 'customer_name' => $request->customer_name,
                 'email'         => $request->email,
                 'phone'         => $request->phone,
-                'order_type'    => 'dine_in', // 🔥 Kunci di sini
+                'order_type'    => 'dine_in', 
                 'total_price'   => $totalPrice,
-                'status'        => 'pending'
+                'status'        => 'pending',
+                'is_printed'    => false,
             ]);
 
             // 2. Simpan Items (Looping dari session cart)

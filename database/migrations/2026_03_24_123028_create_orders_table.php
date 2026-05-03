@@ -25,8 +25,8 @@ return new class extends Migration
                 ->nullOnDelete();
 
             $table->string('customer_name');
-            $table->string('email')->nullable(); 
-            
+            $table->string('email')->nullable();
+
             $table->string('phone')->nullable();
             $table->text('notes')->nullable();
 
@@ -40,6 +40,7 @@ return new class extends Migration
                 'done',
                 'cancelled'
             ])->default('pending');
+            $table->boolean('is_printed')->default(false);
 
             $table->timestamps();
         });

@@ -100,6 +100,23 @@ class OrderListController extends Controller
         // Jalankan fungsi private dan dapatkan hasilnya (Redirect)
         return $this->processCashPayment($order);
     }
+    public function checkUnprinted()
+    {
+        $order = Order::where('status', 'paid')
+            ->where('is_printed', false)
+            ->first();
+
+        return response()->json([
+            'has_new' => $order ? true : false,
+            'order_id' => $order ? $order->id : null
+        ]);
+    }
+
+    public function markAsPrinted(Order $order)
+    {
+        $order->update(['is_printed' => true]);
+        return response()->json(['success' => true]);
+    }
 
     private function processCashPayment(Order $order)
     {

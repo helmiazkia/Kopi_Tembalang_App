@@ -50,7 +50,8 @@ class OrderController extends Controller
                 'phone' => $request->phone,
                 'notes' => $request->notes,
                 'total_price' => 0,
-                'status' => 'pending'
+                'status' => 'pending',
+                'is_printed' => true,
             ]);
 
             $total = 0;

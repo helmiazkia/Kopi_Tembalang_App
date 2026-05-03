@@ -341,6 +341,14 @@
                 })
                 .then(res => res.json())
                 .then(res => {
+                    
+                    if (res.status === 'error' || res.errors) {
+                        alert(res.message || 'Terjadi kesalahan validasi.');
+                        document.getElementById('success-modal').classList.remove('show');
+                        btn.disabled = false;
+                        return;
+                    }
+
                     if (res.type === 'cash') {
                         window.location.href = '/cashier/receipt/' + res.order_id;
                         return;
@@ -468,6 +476,7 @@
                 };
                 addInp(`items[${i}][menu_id]`, item.id);
                 addInp(`items[${i}][notes]`, item.notes);
+                addInp(`items[${i}][qty]`, 1);
                 Object.entries(item.selectedOptions).forEach(([optId, opt]) => {
                     addInp(`items[${i}][options][${optId}]`, opt.id);
                 });

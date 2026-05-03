@@ -81,6 +81,11 @@ Route::middleware('auth')->group(function () {
                 ->name('orderList.scan');
             Route::get('orderList/{order}/snap-token', [OrderListController::class, 'getSnapToken'])
                 ->name('orderList.snap-token');
+            Route::get('/api/check-unprinted', [OrderListController::class, 'checkUnprinted'])
+                ->name('api.check.unprinted');
+
+            Route::post('/api/mark-as-printed/{order}', [OrderListController::class, 'markAsPrinted'])
+                ->name('api.mark.printed');
             Route::get('/orderList/snap/{order}', [OrderListController::class, 'getSnapToken'])->name('orderList.snap');
             Route::get('/orderList/pay/{order}', [OrderListController::class, 'pay'])->name('orderList.pay');
         });

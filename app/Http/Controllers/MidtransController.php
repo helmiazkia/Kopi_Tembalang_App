@@ -16,7 +16,7 @@ class MidtransController extends Controller
 
         try {
             $notif = new Notification();
-            
+
             $transactionStatus = $notif->transaction_status;
             $paymentType = $notif->payment_type;
             $orderIdRaw = $notif->order_id;
@@ -41,23 +41,21 @@ class MidtransController extends Controller
             // Handle Status
             if (in_array($transactionStatus, ['settlement', 'capture'])) {
                 $payment->update(['status' => 'paid', 'paid_at' => now()]);
-                $order->update(['status' => 'paid']);
+                $order->update([
+                    'status' => 'paid'
+                ]);
                 Log::info("Payment Success: Order #{$orderId}");
-            } 
-            elseif ($transactionStatus == 'pending') {
+            } elseif ($transactionStatus == 'pending') {
                 $payment->update(['status' => 'pending']);
-            } 
-            elseif ($transactionStatus == 'expire') {
+            } elseif ($transactionStatus == 'expire') {
                 $payment->update(['status' => 'expired']);
                 $order->update(['status' => 'cancelled']);
-            } 
-            elseif (in_array($transactionStatus, ['cancel', 'deny', 'failure'])) {
+            } elseif (in_array($transactionStatus, ['cancel', 'deny', 'failure'])) {
                 $payment->update(['status' => 'failed']);
                 $order->update(['status' => 'cancelled']);
             }
 
             return response()->json(['message' => 'OK']);
-
         } catch (\Exception $e) {
             Log::error('Midtrans Callback Error: ' . $e->getMessage());
             return response()->json(['message' => $e->getMessage()], 500);

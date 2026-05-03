@@ -15,16 +15,19 @@ class Order extends Model
     protected $fillable = [
         'table_id',
         'cashier_id',
+        'order_type',
         'customer_name',
         'email',
         'phone',
         'notes',
         'total_price',
-        'status'
+        'status',
+        'is_printed'
     ];
 
     protected $casts = [
-        'total_price' => 'integer'
+        'total_price' => 'integer',
+        'is_printed' => 'boolean'
     ];
 
     public function table()

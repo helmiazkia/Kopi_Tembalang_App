@@ -1,4 +1,5 @@
 <x-layouts.cashier title="Antrean Tagihan">
+    <!-- Midtrans Snap.js -->
     <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.clientKey') }}"></script>
 
     <style>
@@ -28,12 +29,18 @@
         .modal-overlay.show {
             display: flex;
         }
+
+        .status-unpaid {
+            background-color: #fff7ed;
+            color: #9a3412;
+            border: 1px solid #ffedd5;
+        }
     </style>
 
     <div class="p-6 md:p-10 max-w-[1600px] mx-auto">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-            {{-- SEKSI KIRI: SCANNER (Tetap ada untuk shortcut Bayar Cash) --}}
+            {{-- SEKSI KIRI: SCANNER & SISTEM --}}
             <div class="lg:col-span-4 xl:col-span-3">
                 <div class="bg-[#1a1a1a] p-8 rounded-[2.5rem] border-4 border-black shadow-2xl relative overflow-hidden mb-8 group">
                     <div class="absolute top-0 left-0 w-full h-1 bg-[#D4E971] animate-pulse shadow-[0_0_15px_#D4E971]"></div>
@@ -69,13 +76,12 @@
 
                     <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
                         @forelse($pendingOrders as $order)
-                        {{-- 🔥 KLIK CARD LANGSUNG JALANKAN instantPay --}}
                         <div class="order-card bg-white rounded-[2rem] p-7 shadow-sm relative flex flex-col"
                             onclick="instantPay('{{ $order->id }}')">
 
                             <div class="flex justify-between items-start mb-6">
                                 <span class="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-400 tracking-widest">#{{ $order->id }}</span>
-                                <div class="flex items-center gap-2 px-3 py-1 bg-amber-50 rounded-lg border border-amber-100 text-amber-700">
+                                <div class="flex items-center gap-2 px-3 py-1 rounded-lg status-unpaid">
                                     <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
                                     <span class="text-[9px] font-black uppercase">UNPAID</span>
                                 </div>
@@ -84,7 +90,7 @@
                             <div class="mb-8">
                                 <h2 class="text-xl font-black text-slate-800 uppercase truncate">{{ $order->customer_name ?? 'Guest' }}</h2>
                                 <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ $order->order_type }}</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ str_replace('_', ' ', $order->order_type) }}</span>
                                     @if($order->table)
                                     <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
                                     <span class="text-[10px] font-black text-[#D4E971] uppercase tracking-widest">Meja {{ $order->table->table_number }}</span>
@@ -143,11 +149,14 @@
 
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
+        // Flag untuk mengontrol polling agar tidak mengganggu saat modal/snap terbuka
+        let isModalOpen = false;
+
         /**
-         * 🔥 FUNGSI BAYAR INSTAN
-         * Langsung ambil token dari Database (Logic Controller baru Anda)
+         * 🔥 FUNGSI BAYAR INSTAN (QRIS)
          */
         function instantPay(orderId) {
+            isModalOpen = true; // Kunci polling
             document.getElementById('processing-modal').classList.add('show');
 
             fetch(`/cashier/orderList/snap/${orderId}`)
@@ -157,33 +166,37 @@
 
                     if (res.error) {
                         alert(res.error);
+                        isModalOpen = false;
                         return;
                     }
 
-                    // Panggil Midtrans Snap dengan token yang sudah ada di DB
                     snap.pay(res.snap_token, {
                         onSuccess: function(result) {
                             window.location.href = '/cashier/receipt/' + orderId;
                         },
                         onPending: function(result) {
                             alert('Pembayaran masih pending.');
+                            isModalOpen = false;
                             location.reload();
                         },
                         onError: function(result) {
                             alert('Terjadi kesalahan pembayaran.');
+                            isModalOpen = false;
                         },
                         onClose: function() {
                             console.log('Kasir menutup jendela pembayaran');
+                            isModalOpen = false; // Buka kunci polling
                         }
                     });
                 })
                 .catch(err => {
                     document.getElementById('processing-modal').classList.remove('show');
+                    isModalOpen = false;
                     alert('Gagal mengambil data transaksi.');
                 });
         }
 
-        // Scanner Auto-Submit (Tetap Bayar Cash via Scan)
+        // Scanner Auto-Submit (Bayar Cash via Scanner Fisik)
         const scannerInput = document.getElementById('scanner-input');
         if (scannerInput) {
             scannerInput.addEventListener('input', function() {
@@ -194,10 +207,51 @@
                     }, 150);
                 }
             });
-            document.addEventListener('click', () => scannerInput.focus());
+            document.addEventListener('click', () => {
+                if (!isModalOpen) scannerInput.focus();
+            });
         }
 
-        // Camera Logic
+        /**
+         * 🔥 AUTO-PRINT POLLING SYSTEM
+         * Mengecek database setiap 5 detik untuk order lunas yang belum diprint
+         */
+        setInterval(function() {
+            // Jika kasir sedang memproses pembayaran (Snap terbuka), jangan jalankan polling
+            if (isModalOpen) return;
+
+            fetch("{{ route('cashier.api.check.unprinted') }}")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.has_new) {
+                        isModalOpen = true; // Kunci polling saat proses print berjalan
+
+                        // 1. Buka tab struk (browser otomatis print jika ada window.print() di view receipt)
+                        let printUrl = "{{ url('cashier/receipt') }}/" + data.order_id;
+                        let printWindow = window.open(printUrl, '_blank');
+
+                        // 2. Beri jeda proses print, lalu tandai sebagai 'is_printed = true' di database
+                        setTimeout(() => {
+                            fetch("{{ url('cashier/api/mark-as-printed') }}/" + data.order_id, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Content-Type': 'application/json'
+                                }
+                            }).then(() => {
+                                if (printWindow) printWindow.close();
+                                isModalOpen = false; // Buka kunci polling
+                                window.location.reload(); // Refresh list order
+                            });
+                        }, 3000);
+                    }
+                })
+                .catch(e => console.log("Polling paused/error..."));
+        }, 5000);
+
+        /**
+         * CAMERA LOGIC (QR Scanner Kamera Browser)
+         */
         function onScanSuccess(decodedText) {
             html5QrcodeScanner.clear();
             window.location.href = '/cashier/receipt/' + decodedText;
