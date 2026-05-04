@@ -117,7 +117,11 @@ class OrderListController extends Controller
         $order->update(['is_printed' => true]);
         return response()->json(['success' => true]);
     }
-
+    public function receiptKitchen(Order $order)
+    {
+        $order->load('items.menu', 'items.options.menuOptionItem');
+        return view('cashier.receipt.kitchen', compact('order'));
+    }
     private function processCashPayment(Order $order)
     {
         try {

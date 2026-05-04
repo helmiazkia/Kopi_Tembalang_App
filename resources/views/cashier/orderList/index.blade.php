@@ -217,20 +217,23 @@
          * Mengecek database setiap 5 detik untuk order lunas yang belum diprint
          */
         setInterval(function() {
-            // Jika kasir sedang memproses pembayaran (Snap terbuka), jangan jalankan polling
             if (isModalOpen) return;
 
             fetch("{{ route('cashier.api.check.unprinted') }}")
                 .then(response => response.json())
                 .then(data => {
                     if (data.has_new) {
-                        isModalOpen = true; // Kunci polling saat proses print berjalan
+                        isModalOpen = true;
 
-                        // 1. Buka tab struk (browser otomatis print jika ada window.print() di view receipt)
-                        let printUrl = "{{ url('cashier/receipt') }}/" + data.order_id;
-                        let printWindow = window.open(printUrl, '_blank');
+                        // 1. URL Struk Customer & Struk Dapur
+                        let customerReceipt = "{{ url('cashier/receipt') }}/" + data.order_id;
+                        let kitchenReceipt = "{{ url('cashier/receipt-kitchen') }}/" + data.order_id;
 
-                        // 2. Beri jeda proses print, lalu tandai sebagai 'is_printed = true' di database
+                        // 2. Buka dua tab sekaligus
+                        let win1 = window.open(customerReceipt, '_blank');
+                        let win2 = window.open(kitchenReceipt, '_blank');
+
+                        // 3. Tandai sudah diprint di database
                         setTimeout(() => {
                             fetch("{{ url('cashier/api/mark-as-printed') }}/" + data.order_id, {
                                 method: 'POST',
@@ -239,14 +242,14 @@
                                     'Content-Type': 'application/json'
                                 }
                             }).then(() => {
-                                if (printWindow) printWindow.close();
-                                isModalOpen = false; // Buka kunci polling
-                                window.location.reload(); // Refresh list order
+                                if (win1) win1.close();
+                                if (win2) win2.close();
+                                isModalOpen = false;
+                                window.location.reload();
                             });
-                        }, 3000);
+                        }, 4000); // Beri waktu lebih lama (4 detik) agar kedua dialog print muncul
                     }
-                })
-                .catch(e => console.log("Polling paused/error..."));
+                });
         }, 5000);
 
         /**

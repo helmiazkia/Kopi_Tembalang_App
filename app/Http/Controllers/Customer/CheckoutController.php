@@ -97,7 +97,7 @@ class CheckoutController extends Controller
                         'email'      => $order->email,
                         'phone'      => $order->phone,
                     ],
-                    'enabled_payments' => ['qris', 'gopay', 'shopeepay'],
+                
                 ];
 
                 try {

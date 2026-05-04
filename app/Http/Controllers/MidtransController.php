@@ -12,60 +12,79 @@ class MidtransController extends Controller
     public function callback(Request $request)
     {
         Config::$serverKey = config('midtrans.serverKey');
-        Config::$isProduction = config('midtrans.isProduction', false);
+        Config::$isProduction = config('midtrans.isProduction', true);
 
         try {
-            $notif = new Notification();
+            $data = $request->all();
+            
+            // 🔥 SOLUSI TIMEOUT: Langsung beri respon 200 jika ini adalah notifikasi tes dashboard
+            if (isset($data['order_id']) && str_contains($data['order_id'], 'payment_notif_test')) {
+                Log::info('Midtrans Dashboard Test Received');
+                return response()->json(['message' => 'Test Notification Received'], 200);
+            }
 
+            $notif = new Notification();
             $transactionStatus = $notif->transaction_status;
-            $paymentType = $notif->payment_type;
             $orderIdRaw = $notif->order_id;
             $transactionIdMidtrans = $notif->transaction_id;
 
             $orderId = $this->extractOrderId($orderIdRaw);
+            
+            // 🔥 Gunakan find() dengan aman
             $order = Order::with('payment')->find($orderId);
 
-            if (!$order || !$order->payment) {
-                return response()->json(['message' => 'Order/Payment not found'], 404);
+            if (!$order) {
+                Log::error("Order ID $orderId tidak ditemukan.");
+                return response()->json(['message' => 'Order not found'], 404);
             }
 
             $payment = $order->payment;
             $channel = $this->resolveChannel($notif);
 
-            // Update info transaksi dari Midtrans
-            $payment->update([
-                'channel' => $channel,
-                'transaction_id' => $transactionIdMidtrans
-            ]);
-
-            // Handle Status
-            if (in_array($transactionStatus, ['settlement', 'capture'])) {
-                $payment->update(['status' => 'paid', 'paid_at' => now()]);
-                $order->update([
-                    'status' => 'paid'
+            if ($payment) {
+                $payment->update([
+                    'channel' => $channel,
+                    'transaction_id' => $transactionIdMidtrans
                 ]);
+            }
+
+            // Handle Status Pembayaran
+            if (in_array($transactionStatus, ['settlement', 'capture'])) {
+                if ($payment) {
+                    $payment->update(['status' => 'paid', 'paid_at' => now()]);
+                }
+                
+                $order->update([
+                    'status' => 'paid',
+                    'is_printed' => false // 🔥 Set false agar polling kasir mendeteksi untuk Auto-Print
+                ]);
+                
                 Log::info("Payment Success: Order #{$orderId}");
             } elseif ($transactionStatus == 'pending') {
-                $payment->update(['status' => 'pending']);
-            } elseif ($transactionStatus == 'expire') {
-                $payment->update(['status' => 'expired']);
-                $order->update(['status' => 'cancelled']);
-            } elseif (in_array($transactionStatus, ['cancel', 'deny', 'failure'])) {
-                $payment->update(['status' => 'failed']);
+                if ($payment) $payment->update(['status' => 'pending']);
+            } elseif (in_array($transactionStatus, ['expire', 'cancel', 'deny', 'failure'])) {
+                if ($payment) $payment->update(['status' => 'failed']);
                 $order->update(['status' => 'cancelled']);
             }
 
-            return response()->json(['message' => 'OK']);
+            return response()->json(['message' => 'OK'], 200);
+
         } catch (\Exception $e) {
             Log::error('Midtrans Callback Error: ' . $e->getMessage());
+            // Tetap kembalikan 500 agar Midtrans mencoba mengirim ulang jika memang ada error sistem
             return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
     private function extractOrderId($transactionId)
     {
-        $parts = explode('-', $transactionId);
-        return end($parts);
+        // 🔥 Penanganan jika ID mengandung tanda hubung (-) seperti ORDER-TIMESTAMP-ID
+        if (str_contains($transactionId, '-')) {
+            $parts = explode('-', $transactionId);
+            $lastPart = end($parts);
+            return is_numeric($lastPart) ? $lastPart : $transactionId;
+        }
+        return $transactionId;
     }
 
     private function resolveChannel($notif)

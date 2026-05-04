@@ -21,6 +21,7 @@ use App\Http\Controllers\Customer\OrderController;
 
 // CASHIER
 use App\Http\Controllers\Cashier\OrderController as CashierOrderController;
+use App\Http\Controllers\Cashier\DashboardController as CashierDashboardController;
 use App\Http\Controllers\Cashier\OrderListController;
 use App\Http\Controllers\Cashier\ReceiptController;
 
@@ -68,13 +69,17 @@ Route::middleware('auth')->group(function () {
         ->name('cashier.')
         ->group(function () {
 
+            Route::get('/', [CashierDashboardController::class, 'index'])->name('dashboard');
             // ORDER
             Route::resource('orders', CashierOrderController::class)
                 ->only(['index', 'store']);
 
+
+
             // RECEIPT
             Route::get('receipt/{order}', [ReceiptController::class, 'show'])
                 ->name('receipt.show');
+            Route::get('receipt-kitchen/{order}', [OrderListController::class, 'receiptKitchen'])->name('receipt.kitchen');
             Route::get('orderList', [OrderListController::class, 'index'])->name('orderList.index');
 
             Route::post('orderList/scan', [OrderListController::class, 'scan'])

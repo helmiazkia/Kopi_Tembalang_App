@@ -48,8 +48,8 @@
         <ul class="menu w-full grow px-4 gap-2 overflow-y-auto overflow-x-hidden scrollbar-hide py-6">
 
             <li>
-                <a href="#"
-                    class="flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 {{ request()->is('/') ? 'bg-[#D4E971] text-black shadow-lg shadow-[#D4E971]/30 active-indicator' : 'hover:bg-base-200 text-base-content/80' }} is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                <a href="{{ route('cashier.dashboard') }}"
+                    class="flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 {{ request()->is('cashier/dashboard') ? 'bg-[#D4E971] text-black shadow-lg shadow-[#D4E971]/30 active-indicator' : 'hover:bg-base-200 text-base-content/80' }} is-drawer-close:tooltip is-drawer-close:tooltip-right"
                     data-tip="Dashboard">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
