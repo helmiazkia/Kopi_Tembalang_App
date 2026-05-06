@@ -17,6 +17,7 @@ class CheckoutController extends Controller
      */
     public function index(Request $request)
     {
+        
         // 1. Ambil data table
         $table = Table::findOrFail($request->table);
 
@@ -52,7 +53,7 @@ class CheckoutController extends Controller
                 'customer_name' => $request->customer_name,
                 'email'         => $request->email,
                 'phone'         => $request->phone,
-                'order_type'    => 'dine_in', 
+                'order_type'    => 'dine_in',
                 'total_price'   => $totalPrice,
                 'status'        => 'pending',
                 'is_printed'    => false,
@@ -97,7 +98,7 @@ class CheckoutController extends Controller
                         'email'      => $order->email,
                         'phone'      => $order->phone,
                     ],
-                
+
                 ];
 
                 try {
@@ -116,10 +117,20 @@ class CheckoutController extends Controller
 
             // Alur Cash (Tunai ke Kasir)
             session()->forget(['cart', 'cart_total']);
-            return redirect()->route('customer.payment.cash', $order->id);
+            return redirect()->route('customer.payment.cash', [
+                'order' => $order->id,
+                'clear_cart' => 'true' // Ini pemicu JavaScript di atas
+            ]);
         });
     }
-    // app/Http/Controllers/Customer/CheckoutController.php
+    /**
+     * Menampilkan QR Code untuk pembayaran tunai di kasir.
+     */
+    public function cash(Order $order)
+    {
+        $order->load(['table', 'payment']);
+        return view('customer.payment.cash', compact('order'));
+    }
 
     public function process(Order $order)
     {
@@ -130,6 +141,15 @@ class CheckoutController extends Controller
         return view('customer.payment.process', compact('order'));
     }
 
+    /**
+     * Cek status pembayaran untuk pengalihan otomatis (digunakan oleh JavaScript Polling)
+     */
+    public function checkStatus(Order $order)
+    {
+        return response()->json([
+            'status' => $order->status // akan mengembalikan 'pending', 'paid', atau 'cancelled'
+        ]);
+    }
     /**
      * 🔥 HALAMAN SETELAH PEMBAYARAN BERHASIL (SUCCESS PAGE)
      */

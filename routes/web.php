@@ -122,10 +122,16 @@ Route::post('/cart/sync', [CartController::class, 'sync'])->name('customer.cart.
 // Route Checkout & Payment
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('customer.checkout.index');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('customer.checkout.store');
+Route::get('/payment/cash/{order}', [CheckoutController::class, 'cash'])
+    ->name('customer.payment.cash');
 // routes/web.php
 Route::get('/payment/process/{order}', [CheckoutController::class, 'process'])->name('customer.payment.process');
 // PAYMENT FLOw 
+Route::get('/payment/check/{order}', [CheckoutController::class, 'checkStatus'])
+    ->name('customer.payment.check');
 Route::get('/payment/success/{order}', [CheckoutController::class, 'success'])->name('customer.payment.success');
+
+
 
 
 // ================= 🔥 API / AJAX =================

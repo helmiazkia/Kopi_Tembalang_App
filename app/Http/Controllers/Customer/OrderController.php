@@ -16,10 +16,12 @@ class OrderController extends Controller
         $categories = Category::all();
 
         $menus = Menu::with('options.items')
+            // Filter berdasarkan kategori jika ada
             ->when($request->category, function ($q) use ($request) {
                 $q->where('category_id', $request->category);
             })
-            ->where('is_available', true)
+            ->when($request->stock === 'available', fn($q) => $q->where('is_available', true))
+            ->when($request->stock === 'empty', fn($q) => $q->where('is_available', false))
             ->get();
 
         return view('customer.menu.index', compact('menus', 'table', 'categories'));
@@ -28,8 +30,13 @@ class OrderController extends Controller
     // ================= DETAIL MENU =================
     public function show(Table $table, Menu $menu)
     {
-        $menu->load('options.items');
+        // Proteksi: Jika user mencoba akses menu habis via URL langsung
+        if (!$menu->is_available) {
+            return redirect()->route('customer.menu', $table->id)
+                ->with('error', 'Maaf, menu ini sedang tidak tersedia.');
+        }
 
+        $menu->load('options.items');
         return view('customer.menu.show', compact('menu', 'table'));
     }
 }

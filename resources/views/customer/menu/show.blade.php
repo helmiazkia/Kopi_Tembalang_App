@@ -1,25 +1,5 @@
-<!DOCTYPE html>
-<html lang="id">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>{{ $menu->name }} - Detail Produk</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<x-layouts.customer :title="$menu->name . ' - Detail Produk'">
     <style>
-        :root {
-            --primary: #D4E971;
-            --dark: #1a1a1a;
-            --gray-bg: #f8f9fa;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            margin: 0;
-            background-color: var(--dark);
-            color: var(--dark);
-        }
-
         .product-image-container {
             width: 100%;
             height: 350px;
@@ -62,7 +42,7 @@
 
         .category-label {
             display: inline-block;
-            background: var(--gray-bg);
+            background: #f8f9fa;
             padding: 5px 12px;
             border-radius: 8px;
             font-size: 11px;
@@ -73,17 +53,10 @@
             color: #888;
         }
 
-        h2 {
-            margin: 0;
-            font-size: 26px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-
         .price-tag {
             font-size: 22px;
             font-weight: 800;
-            color: var(--dark);
+            color: #1a1a1a;
             margin-top: 5px;
         }
 
@@ -109,7 +82,7 @@
 
         .option-title span {
             font-size: 10px;
-            background: var(--primary);
+            background: #D4E971;
             padding: 2px 10px;
             border-radius: 6px;
             font-weight: 800;
@@ -131,11 +104,11 @@
             margin-right: 15px;
             width: 18px;
             height: 18px;
-            accent-color: var(--dark);
+            accent-color: #1a1a1a;
         }
 
         .option-item:has(input:checked) {
-            border-color: var(--primary);
+            border-color: #D4E971;
             background: rgba(212, 233, 113, 0.05);
         }
 
@@ -158,7 +131,7 @@
             padding: 15px;
             font-family: inherit;
             resize: none;
-            background: var(--gray-bg);
+            background: #f8f9fa;
             margin-bottom: 110px;
             outline: none;
         }
@@ -172,12 +145,15 @@
             background: white;
             border-top: 1px solid #eee;
             z-index: 100;
+            max-width: 28rem;
+            /* Setara max-w-md */
+            margin: 0 auto;
         }
 
         .btn-add {
             width: 100%;
-            background: var(--dark);
-            color: var(--primary);
+            background: #1a1a1a;
+            color: #D4E971;
             border: none;
             padding: 20px;
             border-radius: 20px;
@@ -193,21 +169,19 @@
             transform: scale(0.97);
         }
     </style>
-</head>
 
-<body>
     <div class="product-image-container">
         <a href="javascript:history.back()" class="back-btn">←</a>
-        @if($menu->image)
+        @if($menu->image && file_exists(public_path('images/menu/'.$menu->image)))
         <img src="{{ asset('images/menu/'.$menu->image) }}" alt="{{ $menu->name }}">
         @else
-        <div style="display:flex; align-items:center; justify-content:center; height:100%; background:#333; color:white;">☕</div>
+        <div class="flex items-center justify-center h-full bg-slate-800 text-white text-4xl">☕</div>
         @endif
     </div>
 
     <div class="detail-panel">
         <span class="category-label">{{ $menu->category->name }}</span>
-        <h2>{{ $menu->name }}</h2>
+        <h2 class="font-black text-2xl tracking-tighter">{{ $menu->name }}</h2>
         <div class="price-tag">Rp {{ number_format($menu->price, 0, ',', '.') }}</div>
         <p class="description">{{ $menu->description }}</p>
 
@@ -215,7 +189,11 @@
             <input type="hidden" id="menu_id" value="{{ $menu->id }}">
             <input type="hidden" id="menu_name" value="{{ $menu->name }}">
             <input type="hidden" id="menu_price" value="{{ $menu->price }}">
-            <input type="hidden" id="table_id" value="{{ $table->id }}"> @foreach($menu->options as $option)
+            {{-- Menyimpan nama file gambar saja untuk diolah di JS keranjang --}}
+            <input type="hidden" id="menu_image" value="{{ $menu->image }}">
+            <input type="hidden" id="table_id" value="{{ $table->id }}">
+
+            @foreach($menu->options as $option)
             <div class="option-group" data-option-name="{{ $option->name }}">
                 <div class="option-title">
                     {{ $option->name }}
@@ -246,6 +224,7 @@
         </form>
     </div>
 
+    @push('scripts')
     <script>
         document.getElementById('orderForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -286,6 +265,7 @@
                 id: document.getElementById('menu_id').value,
                 name: document.getElementById('menu_name').value,
                 price: parseInt(document.getElementById('menu_price').value),
+                image: document.getElementById('menu_image').value,
                 options: selectedOptions,
                 notes: document.getElementById('notes').value,
                 timestamp: new Date().getTime()
@@ -309,6 +289,5 @@
             }
         });
     </script>
-</body>
-
-</html>
+    @endpush
+</x-layouts.customer>
