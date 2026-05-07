@@ -28,16 +28,27 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $user = auth()->user();
+        $user = Auth::user();
 
+        // 🔥 LOGIKA REDIRECT BERDASARKAN ROLE
         if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
-        } elseif ($user->role === 'cashier') {
+        } 
+        
+        if ($user->role === 'cashier') {
             return redirect()->route('cashier.dashboard');
         }
 
-        abort(403);
+        // TAMBAHKAN INI: Redirect khusus untuk kru Dapur
+        if ($user->role === 'kitchen') {
+            return redirect()->route('kitchen.index');
+        }
+
+        // Jika user tidak punya role yang dikenal, logout dan cegah akses
+        Auth::logout();
+        abort(403, 'Akses ditolak. Role tidak terdaftar.');
     }
+
     /**
      * Destroy an authenticated session.
      */
@@ -49,6 +60,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect()->route('login');
     }
 }
