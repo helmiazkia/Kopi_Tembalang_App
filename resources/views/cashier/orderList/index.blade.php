@@ -1,273 +1,413 @@
 <x-layouts.cashier title="Antrean Tagihan">
-    <!-- Midtrans Snap.js -->
-    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.clientKey') }}"></script>
 
-    <style>
-        .order-card {
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
-            border: 1px solid #f1f5f9;
-        }
+{{-- Midtrans Snap --}}
+<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.clientKey') }}"></script>
 
-        .order-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px -10px rgba(212, 233, 113, 0.3);
-            border-color: #D4E971;
-        }
+<style>
+    /* ── Order Card ── */
+    .order-card {
+        border: 1.5px solid #f1f5f9;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        cursor: pointer;
+    }
+    .order-card:hover {
+        transform: translateY(-5px);
+        border-color: #D4E971;
+        box-shadow: 0 20px 40px -12px rgba(212,233,113,0.2);
+    }
 
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(8px);
-            z-index: 999;
-            align-items: center;
-            justify-content: center;
-        }
+    /* ── Modal ── */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15,23,42,0.45);
+        backdrop-filter: blur(10px);
+        z-index: 999;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+</style>
 
-        .modal-overlay.show {
-            display: flex;
-        }
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-        .status-unpaid {
-            background-color: #fff7ed;
-            color: #9a3412;
-            border: 1px solid #ffedd5;
-        }
-    </style>
+    {{-- ════════════════════════════════════════
+         KIRI: SCANNER
+    ════════════════════════════════════════ --}}
+    <div class="lg:col-span-4 xl:col-span-3">
+        <div class="sticky top-6 bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl relative overflow-hidden">
+            {{-- Accent line --}}
+            <div class="absolute top-0 left-0 right-0 h-0.5 bg-[#D4E971] shadow-[0_0_12px_#D4E971]"></div>
 
-    <div class="p-6 md:p-10 max-w-[1600px] mx-auto">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div class="flex flex-col items-center text-center">
+                {{-- Icon --}}
+                <div class="w-14 h-14 bg-[#D4E971] rounded-2xl mb-6 flex items-center justify-center text-black shadow-lg shadow-[#D4E971]/30">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path d="M3 7V5a2 2 0 012-2h2m10 0h2a2 2 0 012 2v2m0 10v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
+                        <path d="M12 7v10m0-10l-3 3m3-3l3 3"/>
+                    </svg>
+                </div>
 
-            {{-- SEKSI KIRI: SCANNER & SISTEM --}}
-            <div class="lg:col-span-4 xl:col-span-3">
-                <div class="bg-[#1a1a1a] p-8 rounded-[2.5rem] border-4 border-black shadow-2xl relative overflow-hidden mb-8 group">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-[#D4E971] animate-pulse shadow-[0_0_15px_#D4E971]"></div>
-                    <div class="relative flex flex-col items-center text-center">
-                        <div class="w-16 h-16 bg-[#D4E971] rounded-2xl shadow-[0_0_20px_rgba(212,233,113,0.4)] mb-6 flex items-center justify-center text-black">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                <path d="M3 7V5a2 2 0 012-2h2m10 0h2a2 2 0 012 2v2m0 10v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M12 7v10m0-10l-3 3m3-3l3 3"></path>
+                <span class="text-[9px] font-black tracking-[0.3em] text-slate-500 uppercase mb-1">System Ready</span>
+                <h1 class="text-white text-2xl font-black uppercase tracking-tight mb-8">
+                    Scan <span class="text-[#D4E971]">Order.</span>
+                </h1>
+
+                <form method="POST" action="{{ route('cashier.orderList.scan') }}" id="scan-form" class="w-full">
+                    @csrf
+                    <input
+                        type="text" name="code" id="scanner-input"
+                        placeholder="WAITING..."
+                        autocomplete="off" autofocus
+                        class="w-full px-6 py-5 bg-white/5 border-2 border-white/10 rounded-2xl text-center
+                               text-2xl font-black text-[#D4E971] outline-none
+                               focus:border-[#D4E971]/50 transition-colors tracking-widest">
+                </form>
+
+                <p class="mt-5 text-[9px] text-slate-600 font-bold uppercase tracking-widest leading-relaxed">
+                    Klik di mana saja jika input tidak fokus
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {{-- ════════════════════════════════════════
+         KANAN: ANTREAN & RIWAYAT
+    ════════════════════════════════════════ --}}
+    <div class="lg:col-span-8 xl:col-span-9 space-y-10">
+
+        {{-- Header Antrean --}}
+        <div class="flex items-end justify-between pb-4 border-b border-slate-200">
+            <div>
+                <p class="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-1">Pembayaran Tertunda</p>
+                <h1 class="text-3xl font-black text-slate-800 tracking-tight">
+                    Antrean <span class="text-[#D4E971]">Tagihan.</span>
+                </h1>
+            </div>
+            <div class="bg-slate-900 text-[#D4E971] px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest">
+                {{ $pendingOrders->count() }} Pending
+            </div>
+        </div>
+
+        {{-- Grid Antrean --}}
+        <div id="js-order-grid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+            @forelse($pendingOrders as $order)
+                <div class="order-card bg-white rounded-3xl p-6 shadow-sm relative flex flex-col"
+                    onclick="handleOrderClick(
+                        '{{ $order->id }}',
+                        '{{ $order->payment->method ?? 'cash' }}',
+                        '{{ $order->customer_name }}',
+                        '{{ number_format($order->total_price) }}'
+                    )">
+
+                    {{-- Badges --}}
+                    <div class="flex justify-between items-start mb-5">
+                        <span class="px-3 py-1 bg-slate-100 rounded-lg text-[9px] font-black text-slate-400 tracking-widest">
+                            #{{ $order->id }}
+                        </span>
+                        <div class="flex items-center gap-2">
+                            @if($order->status === 'done')
+                                <span class="px-2 py-1 bg-green-500 text-white text-[8px] font-black rounded-lg animate-bounce shadow-sm shadow-green-200">
+                                    SIAP DIANTAR
+                                </span>
+                            @endif
+                            <div class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-orange-50 border border-orange-100">
+                                <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                                <span class="text-[8px] font-black uppercase text-orange-800">
+                                    UNPAID · {{ strtoupper($order->payment->method ?? 'CASH') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Info --}}
+                    <div class="mb-6">
+                        <h2 class="text-base font-black text-slate-800 uppercase truncate">
+                            {{ $order->customer_name ?? 'Guest' }}
+                        </h2>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                {{ str_replace('_', ' ', $order->order_type) }}
+                            </span>
+                            @if($order->table)
+                                <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
+                                <span class="text-[9px] font-black text-[#D4E971] uppercase tracking-widest">
+                                    Meja {{ $order->table->table_number }}
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Footer --}}
+                    <div class="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
+                        <h3 class="text-xl font-black text-slate-900">
+                            <span class="text-[9px] font-normal opacity-40">Rp</span>{{ number_format($order->total_price) }}
+                        </h3>
+                        <div class="w-9 h-9 bg-slate-900 text-[#D4E971] rounded-xl flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path d="M9 5l7 7-7 7"/>
                             </svg>
                         </div>
-                        <h2 class="text-[#D4E971] font-black uppercase tracking-[0.2em] text-xs mb-2">System Ready</h2>
-                        <h1 class="text-white text-2xl font-black uppercase italic mb-8 tracking-tighter">Scan <span class="text-[#D4E971] not-italic">Order.</span></h1>
-
-                        <form method="POST" action="{{ route('cashier.orderList.scan') }}" id="scan-form" class="w-full">
-                            @csrf
-                            <input type="text" name="code" id="scanner-input" placeholder="WAITING..." class="w-full px-6 py-6 bg-white/5 border-2 border-white/10 rounded-2xl text-center text-2xl font-black text-[#D4E971] outline-none" autofocus autocomplete="off">
-                        </form>
                     </div>
                 </div>
-
-                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm sticky top-10">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 text-center">Kamera Cadangan</h3>
-                    <div id="reader" class="w-full rounded-2xl overflow-hidden border-2 border-dashed border-slate-100"></div>
+            @empty
+                <div class="col-span-full py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                    <p class="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
+                        Tidak ada tagihan tertunda
+                    </p>
                 </div>
+            @endforelse
+        </div>
+
+        {{-- Riwayat Transaksi --}}
+        <div id="js-history-grid" class="bg-slate-900 rounded-3xl p-8 relative overflow-hidden">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="w-8 h-0.5 bg-[#D4E971] rounded-full block"></span>
+                <h2 class="text-white font-black uppercase tracking-[0.2em] text-xs">Riwayat Transaksi Hari Ini</h2>
             </div>
 
-            {{-- SEKSI KANAN: LIST ANTREAN --}}
-            <div class="lg:col-span-8 xl:col-span-9">
-                <div class="mb-14">
-                    <div class="flex items-end justify-between mb-8 pb-4 border-b border-slate-100">
-                        <h1 class="text-3xl font-black text-slate-800 uppercase italic tracking-tighter">Antrean <span class="text-[#D4E971] not-italic">Tagihan.</span></h1>
-                        <div class="bg-black text-[#D4E971] px-4 py-2 rounded-xl font-black text-xs uppercase">{{ $pendingOrders->count() }} Pending</div>
-                    </div>
-
-                    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        @forelse($pendingOrders as $order)
-                        <div class="order-card bg-white rounded-[2rem] p-7 shadow-sm relative flex flex-col"
-                            onclick="instantPay('{{ $order->id }}')">
-
-                            <div class="flex justify-between items-start mb-6">
-                                <span class="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-400 tracking-widest">#{{ $order->id }}</span>
-                                <div class="flex items-center gap-2 px-3 py-1 rounded-lg status-unpaid">
-                                    <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-                                    <span class="text-[9px] font-black uppercase">UNPAID</span>
-                                </div>
+            <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+                @foreach($paidOrders as $order)
+                    <div class="flex justify-between items-center p-4 rounded-2xl
+                                bg-white/5 border border-white/10
+                                hover:bg-[#D4E971]/10 hover:border-[#D4E971]/30 transition-all cursor-pointer"
+                        onclick="openHistoryDetail(
+                            '{{ $order->id }}',
+                            '{{ $order->customer_name }}',
+                            '{{ $order->status }}',
+                            '{{ number_format($order->total_price) }}',
+                            '{{ $order->table->table_number ?? 'TA' }}'
+                        )">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-black text-white text-[10px] uppercase">{{ $order->customer_name }}</h3>
+                                <span class="w-1.5 h-1.5 rounded-full {{ $order->status === 'done' ? 'bg-green-500 animate-pulse' : 'bg-amber-500' }}"></span>
                             </div>
-
-                            <div class="mb-8">
-                                <h2 class="text-xl font-black text-slate-800 uppercase truncate">{{ $order->customer_name ?? 'Guest' }}</h2>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ str_replace('_', ' ', $order->order_type) }}</span>
-                                    @if($order->table)
-                                    <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                    <span class="text-[10px] font-black text-[#D4E971] uppercase tracking-widest">Meja {{ $order->table->table_number }}</span>
-                                    @endif
-                                </div>
-                            </div>
-
-                            <div class="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
-                                <h3 class="text-2xl font-black text-slate-900 italic">
-                                    <span class="text-xs font-normal opacity-40 not-italic">Rp</span>{{ number_format($order->total_price) }}
-                                </h3>
-                                <div class="w-10 h-10 bg-slate-900 text-[#D4E971] rounded-xl flex items-center justify-center group-hover:bg-[#D4E971] group-hover:text-black transition-colors">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-                                        <path d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                </div>
-                            </div>
+                            <p class="text-[8px] text-white/30 uppercase mt-1 tracking-widest">
+                                {{ $order->updated_at->format('H:i') }} ·
+                                <span class="{{ $order->status === 'done' ? 'text-green-400' : 'text-amber-400' }}">
+                                    {{ $order->status === 'done' ? 'SELESAI' : 'DIMASAK' }}
+                                </span>
+                            </p>
                         </div>
-                        @empty
-                        <div class="col-span-full py-20 text-center bg-slate-50 rounded-[3rem] border-4 border-dashed border-slate-100">
-                            <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] italic">Tidak ada tagihan tertunda</p>
-                        </div>
-                        @endforelse
+                        <span class="text-xs font-black text-[#D4E971]">Rp{{ number_format($order->total_price) }}</span>
                     </div>
-                </div>
-
-                {{-- RIWAYAT TRANSAKSI --}}
-                <div class="bg-slate-900 rounded-[3rem] p-10 relative overflow-hidden">
-                    <h1 class="text-white font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-4">
-                        <span class="w-8 h-[2px] bg-[#D4E971]"></span> Riwayat Transaksi Hari Ini
-                    </h1>
-                    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        @foreach($paidOrders as $order)
-                        <div class="bg-white/5 border border-white/10 p-5 rounded-2xl flex justify-between items-center group hover:bg-white/10 transition-all">
-                            <div>
-                                <h2 class="font-black text-white text-xs uppercase">{{ $order->customer_name }}</h2>
-                                <p class="text-[9px] text-white/30 uppercase mt-1 tracking-widest">{{ $order->updated_at->format('H:i') }} • SUCCESS</p>
-                            </div>
-                            <h3 class="text-sm font-black text-[#D4E971] italic">Rp{{ number_format($order->total_price) }}</h3>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
+                @endforeach
             </div>
         </div>
-    </div>
 
-    {{-- MODAL PROCESSING (LOADING) --}}
-    <div id="processing-modal" class="modal-overlay">
-        <div class="bg-white rounded-[2.5rem] p-8 text-center w-80 shadow-2xl border border-slate-100">
-            <div class="animate-spin w-12 h-12 border-4 border-[#D4E971] border-t-slate-900 rounded-full mx-auto mb-6"></div>
-            <h2 class="text-xl font-black text-slate-800 uppercase italic">Processing...</h2>
-            <p class="text-xs font-bold text-slate-400 mt-2 uppercase">Menghubungkan Pembayaran</p>
+    </div>
+</div>
+
+{{-- ════════════════════════════════════════════════════════
+     MODAL: BAYAR TUNAI
+════════════════════════════════════════════════════════ --}}
+<div id="cash-modal" class="modal-overlay">
+    <div class="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl border border-slate-100 mx-4 text-center">
+        <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-5 text-3xl">💵</div>
+        <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight mb-1">Bayar Tunai?</h2>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-7">
+            <span id="modal-customer-name"></span> — Rp<span id="modal-total-price"></span>
+        </p>
+        <div class="space-y-3">
+            <button onclick="processCash()"
+                class="w-full bg-slate-900 text-[#D4E971] py-4 rounded-2xl font-black uppercase text-[10px]
+                       tracking-widest active:scale-95 transition-transform shadow-lg">
+                Selesaikan Pembayaran
+            </button>
+            <button onclick="closeCashModal()"
+                class="w-full py-3 text-slate-400 font-black uppercase text-[9px] tracking-widest hover:text-red-400 transition-colors">
+                Batal
+            </button>
         </div>
     </div>
+</div>
 
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script>
-        // Flag untuk mengontrol polling agar tidak mengganggu saat modal/snap terbuka
-        let isModalOpen = false;
+{{-- ════════════════════════════════════════════════════════
+     MODAL: DETAIL RIWAYAT
+════════════════════════════════════════════════════════ --}}
+<div id="history-detail-modal" class="modal-overlay">
+    <div class="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl border border-slate-100 mx-4">
+        <div class="text-center mb-6">
+            <div id="history-status-icon"
+                class="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center text-2xl"></div>
+            <h2 id="history-customer-name" class="text-xl font-black text-slate-800 uppercase tracking-tight"></h2>
+            <p id="history-status-text" class="text-[9px] font-black uppercase tracking-widest mt-1"></p>
+        </div>
 
-        /**
-         * 🔥 FUNGSI BAYAR INSTAN (QRIS)
-         */
-        function instantPay(orderId) {
-            isModalOpen = true; // Kunci polling
-            document.getElementById('processing-modal').classList.add('show');
+        <div class="bg-slate-50 rounded-2xl p-5 space-y-3 mb-6">
+            <div class="flex justify-between items-center">
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">No. Meja</span>
+                <span id="history-table" class="text-sm font-black text-slate-800"></span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Bayar</span>
+                <span id="history-total" class="text-sm font-black text-slate-800"></span>
+            </div>
+        </div>
 
-            fetch(`/cashier/orderList/snap/${orderId}`)
-                .then(res => res.json())
-                .then(res => {
-                    document.getElementById('processing-modal').classList.remove('show');
+        <div class="space-y-3">
+            <button onclick="reprintReceipt()"
+                class="w-full flex items-center justify-center gap-3 bg-slate-900 text-[#D4E971] py-4 rounded-2xl
+                       font-black uppercase text-[10px] tracking-widest active:scale-95 transition-transform shadow-lg">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                Cetak Ulang Struk
+            </button>
+            <button onclick="closeHistoryModal()"
+                class="w-full py-3 text-slate-400 font-black uppercase text-[9px] tracking-widest hover:text-red-400 transition-colors">
+                Tutup
+            </button>
+        </div>
+    </div>
+</div>
 
-                    if (res.error) {
-                        alert(res.error);
+{{-- ════════════════════════════════════════════════════════
+     MODAL: PROCESSING
+════════════════════════════════════════════════════════ --}}
+<div id="processing-modal" class="modal-overlay">
+    <div class="bg-white rounded-3xl p-10 text-center w-72 shadow-2xl mx-4">
+        <div class="w-12 h-12 border-4 border-[#D4E971] border-t-slate-900 rounded-full animate-spin mx-auto mb-5"></div>
+        <h2 class="text-base font-black text-slate-800 uppercase tracking-tight">Processing...</h2>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    // ── State ─────────────────────────────────────────────────────────
+    let isModalOpen   = false;
+    let selectedOrder = null;
+    let historyOrder  = null;
+
+    // ── Helpers Modal ──────────────────────────────────────────────────
+    const showModal = id => { document.getElementById(id).classList.add('show'); isModalOpen = true; };
+    const hideModal = id => { document.getElementById(id).classList.remove('show'); isModalOpen = false; };
+
+    // ── Handle Klik Kartu Order ────────────────────────────────────────
+    function handleOrderClick(id, method, name, total) {
+        selectedOrder = id;
+        method === 'cash' ? openCashModal(name, total) : processQRIS(id);
+    }
+
+    // ── Cash Modal ─────────────────────────────────────────────────────
+    function openCashModal(name, total) {
+        document.getElementById('modal-customer-name').innerText = name;
+        document.getElementById('modal-total-price').innerText   = total;
+        showModal('cash-modal');
+    }
+
+    function closeCashModal() { hideModal('cash-modal'); }
+
+    function processCash() {
+        if (!confirm('Yakin pesanan ini sudah dibayar tunai?')) return;
+        closeCashModal();
+        showModal('processing-modal');
+        window.location.href = `/cashier/orderList/pay/${selectedOrder}`;
+    }
+
+    // ── QRIS ───────────────────────────────────────────────────────────
+    function processQRIS(id) {
+        showModal('processing-modal');
+        fetch(`/cashier/orderList/snap/${id}`)
+            .then(res => res.json())
+            .then(res => {
+                hideModal('processing-modal');
+                if (res.error) { alert(res.error); isModalOpen = false; return; }
+                snap.pay(res.snap_token, {
+                    onSuccess: () => window.location.href = '/cashier/receipt/' + id,
+                    onPending: () => { isModalOpen = false; updateUI(); },
+                    onClose:   () => { isModalOpen = false; },
+                });
+            })
+            .catch(() => { hideModal('processing-modal'); isModalOpen = false; });
+    }
+
+    // ── History Modal ──────────────────────────────────────────────────
+    function openHistoryDetail(id, name, status, total, table) {
+        historyOrder = id;
+        const isDone = status === 'done';
+
+        document.getElementById('history-customer-name').innerText = name;
+        document.getElementById('history-total').innerText         = 'Rp' + total;
+        document.getElementById('history-table').innerText         = table === 'TA' ? 'Takeaway' : 'Meja ' + table;
+
+        const icon = document.getElementById('history-status-icon');
+        const txt  = document.getElementById('history-status-text');
+
+        icon.className = `w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center text-2xl ${isDone ? 'bg-green-100 animate-bounce' : 'bg-amber-100 animate-pulse'}`;
+        icon.innerText = isDone ? '✅' : '🔥';
+        txt.className  = `text-[9px] font-black uppercase tracking-widest mt-1 ${isDone ? 'text-green-500' : 'text-amber-500'}`;
+        txt.innerText  = isDone ? 'Siap Diantar' : 'Sedang Dimasak';
+
+        showModal('history-detail-modal');
+    }
+
+    function closeHistoryModal() { hideModal('history-detail-modal'); }
+
+    function reprintReceipt() {
+        if (!historyOrder) return;
+        window.open("{{ url('cashier/receipt') }}/" + historyOrder, '_blank');
+    }
+
+    // ── Polling: Update UI ─────────────────────────────────────────────
+    function updateUI() {
+        if (isModalOpen) return;
+        fetch(window.location.href)
+            .then(res => res.text())
+            .then(html => {
+                const doc   = new DOMParser().parseFromString(html, 'text/html');
+                const order = document.getElementById('js-order-grid');
+                const hist  = document.getElementById('js-history-grid');
+                if (order) order.innerHTML = doc.getElementById('js-order-grid').innerHTML;
+                if (hist)  hist.innerHTML  = doc.getElementById('js-history-grid').innerHTML;
+            });
+    }
+
+    // ── Polling: Auto Print ────────────────────────────────────────────
+    function checkUnprinted() {
+        if (isModalOpen) return;
+        fetch("{{ route('cashier.api.check.unprinted') }}")
+            .then(res => res.json())
+            .then(data => {
+                if (!data.has_new) return;
+                isModalOpen = true;
+                const win = window.open("{{ url('cashier/receipt') }}/" + data.order_id, '_blank');
+                setTimeout(() => {
+                    fetch("{{ url('cashier/api/mark.printed') }}/" + data.order_id, {
+                        method:  'POST',
+                        headers: {
+                            'X-CSRF-TOKEN':  '{{ csrf_token() }}',
+                            'Content-Type':  'application/json',
+                        },
+                    }).then(() => {
+                        if (win) win.close();
                         isModalOpen = false;
-                        return;
-                    }
-
-                    snap.pay(res.snap_token, {
-                        onSuccess: function(result) {
-                            window.location.href = '/cashier/receipt/' + orderId;
-                        },
-                        onPending: function(result) {
-                            alert('Pembayaran masih pending.');
-                            isModalOpen = false;
-                            location.reload();
-                        },
-                        onError: function(result) {
-                            alert('Terjadi kesalahan pembayaran.');
-                            isModalOpen = false;
-                        },
-                        onClose: function() {
-                            console.log('Kasir menutup jendela pembayaran');
-                            isModalOpen = false; // Buka kunci polling
-                        }
+                        updateUI();
                     });
-                })
-                .catch(err => {
-                    document.getElementById('processing-modal').classList.remove('show');
-                    isModalOpen = false;
-                    alert('Gagal mengambil data transaksi.');
-                });
-        }
-
-        // Scanner Auto-Submit (Bayar Cash via Scanner Fisik)
-        const scannerInput = document.getElementById('scanner-input');
-        if (scannerInput) {
-            scannerInput.addEventListener('input', function() {
-                if (this.value.length > 0) {
-                    this.classList.add('opacity-50');
-                    setTimeout(() => {
-                        document.getElementById('scan-form').submit();
-                    }, 150);
-                }
+                }, 3000);
             });
-            document.addEventListener('click', () => {
-                if (!isModalOpen) scannerInput.focus();
-            });
-        }
+    }
 
-        /**
-         * 🔥 AUTO-PRINT POLLING SYSTEM
-         * Mengecek database setiap 5 detik untuk order lunas yang belum diprint
-         */
-        setInterval(function() {
-            if (isModalOpen) return;
+    // ── Interval Polling ───────────────────────────────────────────────
+    setInterval(updateUI,       5000);
+    setInterval(checkUnprinted, 5000);
 
-            fetch("{{ route('cashier.api.check.unprinted') }}")
-                .then(response => response.json())
-                .then(data => {
-                    if (data.has_new) {
-                        isModalOpen = true;
-
-                        // 1. URL Struk Customer & Struk Dapur
-                        let customerReceipt = "{{ url('cashier/receipt') }}/" + data.order_id;
-                        let kitchenReceipt = "{{ url('cashier/receipt-kitchen') }}/" + data.order_id;
-
-                        // 2. Buka dua tab sekaligus
-                        let win1 = window.open(customerReceipt, '_blank');
-                        let win2 = window.open(kitchenReceipt, '_blank');
-
-                        // 3. Tandai sudah diprint di database
-                        setTimeout(() => {
-                            fetch("{{ url('cashier/api/mark-as-printed') }}/" + data.order_id, {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                    'Content-Type': 'application/json'
-                                }
-                            }).then(() => {
-                                if (win1) win1.close();
-                                if (win2) win2.close();
-                                isModalOpen = false;
-                                window.location.reload();
-                            });
-                        }, 4000); // Beri waktu lebih lama (4 detik) agar kedua dialog print muncul
-                    }
-                });
-        }, 5000);
-
-        /**
-         * CAMERA LOGIC (QR Scanner Kamera Browser)
-         */
-        function onScanSuccess(decodedText) {
-            html5QrcodeScanner.clear();
-            window.location.href = '/cashier/receipt/' + decodedText;
-        }
-
-        let html5QrcodeScanner = new Html5QrcodeScanner("reader", {
-            fps: 15,
-            qrbox: {
-                width: 250,
-                height: 250
-            },
-            aspectRatio: 1.0
+    // ── Auto Focus Scanner ─────────────────────────────────────────────
+    const scannerInput = document.getElementById('scanner-input');
+    if (scannerInput) {
+        document.addEventListener('click', () => {
+            if (!isModalOpen) scannerInput.focus();
         });
-        html5QrcodeScanner.render(onScanSuccess);
-    </script>
+        scannerInput.addEventListener('input', function () {
+            if (this.value.length > 0) {
+                setTimeout(() => document.getElementById('scan-form').submit(), 150);
+            }
+        });
+    }
+</script>
+@endpush
+
 </x-layouts.cashier>

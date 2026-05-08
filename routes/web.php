@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 
 // ADMIN
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MenuOptionItemController;
@@ -12,12 +13,8 @@ use App\Http\Controllers\Admin\MenuOptionController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\TableController;
 
-
-// CUSTOMER
-use App\Http\Controllers\Customer\CartController;
-use App\Http\Controllers\Customer\CheckoutController;
-use App\Http\Controllers\Customer\OrderController;
-
+// KITCHEN
+use App\Http\Controllers\Kitchen\KitchenController;
 
 // CASHIER
 use App\Http\Controllers\Cashier\OrderController as CashierOrderController;
@@ -25,6 +22,10 @@ use App\Http\Controllers\Cashier\DashboardController as CashierDashboardControll
 use App\Http\Controllers\Cashier\OrderListController;
 use App\Http\Controllers\Cashier\ReceiptController;
 
+// CUSTOMER
+use App\Http\Controllers\Customer\CartController;
+use App\Http\Controllers\Customer\CheckoutController;
+use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 
 // MIDTRANS
 use App\Http\Controllers\MidtransController;
@@ -32,130 +33,87 @@ use App\Http\Controllers\MidtransController;
 // ================= HOME =================
 Route::get('/', fn() => view('welcome'));
 
-
-// ================= AUTH =================
+// ================= AUTH REQUIRED =================
 Route::middleware('auth')->group(function () {
 
-    // ================= PROFILE =================
+    // --- PROFILE ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-
-    // ================= ADMIN =================
-    Route::middleware('role:admin')
-        ->prefix('admin')
-        ->name('admin.')
-        ->group(function () {
-
-            Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-
-            Route::resource('menus', MenuController::class);
-            Route::resource('categories', CategoryController::class);
-            Route::resource('menu_option_items', MenuOptionItemController::class);
-            Route::resource('menu_options', MenuOptionController::class);
-            Route::resource('tables', TableController::class);
-
-            Route::resource('orders', AdminOrderController::class)->only(['index', 'show']);
-
-            Route::get('tables/{table}/download-qr', [TableController::class, 'downloadQR'])
-                ->name('tables.qr.download');
-        });
-
-
-    // ================= CASHIER =================
-    Route::middleware('role:cashier')
-        ->prefix('cashier')
-        ->name('cashier.')
-        ->group(function () {
-
-            Route::get('/', [CashierDashboardController::class, 'index'])->name('dashboard');
-            // ORDER
-            Route::resource('orders', CashierOrderController::class)
-                ->only(['index', 'store']);
-
-
-
-            // RECEIPT
-            Route::get('receipt/{order}', [ReceiptController::class, 'show'])
-                ->name('receipt.show');
-            Route::get('receipt-kitchen/{order}', [OrderListController::class, 'receiptKitchen'])->name('receipt.kitchen');
-            Route::get('orderList', [OrderListController::class, 'index'])->name('orderList.index');
-
-            Route::post('orderList/scan', [OrderListController::class, 'scan'])
-                ->name('orderList.scan');
-            Route::get('orderList/{order}/snap-token', [OrderListController::class, 'getSnapToken'])
-                ->name('orderList.snap-token');
-            Route::get('/api/check-unprinted', [OrderListController::class, 'checkUnprinted'])
-                ->name('api.check.unprinted');
-
-            Route::post('/api/mark-as-printed/{order}', [OrderListController::class, 'markAsPrinted'])
-                ->name('api.mark.printed');
-            Route::get('/orderList/snap/{order}', [OrderListController::class, 'getSnapToken'])->name('orderList.snap');
-            Route::get('/orderList/pay/{order}', [OrderListController::class, 'pay'])->name('orderList.pay');
-        });
-
-    // 🔥 API ROUTES (UNTUK CHECK PAYMENT STATUS)
-    Route::prefix('api')->group(function () {
-        Route::get('check-payment/{orderId}', [MidtransController::class, 'checkPaymentStatus'])
-            ->name('api.check.payment');
+    // ================= ADMIN (Role: admin) =================
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::resource('users', UserController::class);
+        Route::resource('menus', MenuController::class);
+        Route::resource('categories', CategoryController::class);
+        Route::resource('menu_option_items', MenuOptionItemController::class);
+        Route::resource('menu_options', MenuOptionController::class);
+        Route::resource('tables', TableController::class);
+        Route::resource('orders', AdminOrderController::class)->only(['index', 'show']);
+        Route::get('tables/{table}/download-qr', [TableController::class, 'downloadQR'])->name('tables.qr.download');
     });
 
-    // 🔥 TEST CALLBACK (UNTUK DEVELOPMENT)
-    Route::get('test-callback/{orderId}', [MidtransController::class, 'testCallback'])
-        ->name('test.callback');
+    // ================= KITCHEN (Role: kitchen, admin) =================
+    // Admin diberikan akses ke kitchen untuk monitoring
+    Route::middleware('role:kitchen,admin')->prefix('kitchen')->name('kitchen.')->group(function () {
+        Route::get('/', [KitchenController::class, 'index'])->name('index');
+        Route::post('/ready/{order}', [KitchenController::class, 'markAsDone'])->name('ready');
+    });
+
+    // ================= CASHIER (Role: cashier, admin) =================
+    Route::middleware('role:cashier,admin')->prefix('cashier')->name('cashier.')->group(function () {
+        Route::get('/', [CashierDashboardController::class, 'index'])->name('dashboard');
+        Route::resource('orders', CashierOrderController::class)->only(['index', 'store']);
+
+        // Order List & Scan
+        Route::get('orderList', [OrderListController::class, 'index'])->name('orderList.index');
+        Route::post('orderList/scan', [OrderListController::class, 'scan'])->name('orderList.scan');
+
+        // Payment & Snap
+        Route::get('orderList/snap/{order}', [OrderListController::class, 'getSnapToken'])->name('orderList.snap');
+        Route::get('orderList/pay/{order}', [OrderListController::class, 'pay'])->name('orderList.pay');
+
+        // Receipt & Printing
+        Route::get('receipt/{order}', [ReceiptController::class, 'show'])->name('receipt.show');
+        Route::get('api/check-unprinted', [OrderListController::class, 'checkUnprinted'])->name('api.check.unprinted');
+        Route::post('api/mark-as-printed/{order}', [OrderListController::class, 'markAsPrinted'])->name('api.mark.printed');
+    });
+
+    // 🔥 API INTERNAL CHECK
+    Route::get('/api/check-payment/{order}', function ($id) {
+        $order = \App\Models\Order::find($id);
+        return response()->json([
+            'status' => $order ? $order->status : 'not_found',
+            'order_id' => $id
+        ]);
+    })->name('api.check.payment');
+}); // End Middleware Auth
+
+
+// ================= CUSTOMER (Public / Tanpa Login) =================
+// Menggunakan {table} agar sistem tahu pelanggan duduk di meja mana
+Route::name('customer.')->group(function () {
+    // Menu
+    Route::get('/menu/{table}', [CustomerOrderController::class, 'index'])->name('menu');
+    Route::get('/menu/{table}/{menu}', [CustomerOrderController::class, 'show'])->name('menu.show');
+
+    // Cart
+    Route::get('/cart/{table}', [CartController::class, 'index'])->name('cart.index');
+    Route::post('/cart/sync', [CartController::class, 'sync'])->name('cart.sync');
+
+    // Checkout & Payment
+    Route::get('/checkout/{table}', [CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout/{table}', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::get('/payment/cash/{order}', [CheckoutController::class, 'cash'])->name('payment.cash');
+
+    Route::get('/payment/process/{order}', [CheckoutController::class, 'process'])->name('payment.process');
+    Route::get('/payment/success/{order}', [CheckoutController::class, 'success'])->name('payment.success');
+    Route::get('/payment/check/{order}', [CheckoutController::class, 'checkStatus'])->name('payment.check');
 });
 
 
-// ================= CUSTOMER =================
+// ================= MIDTRANS CALLBACK (Public) =================
+Route::post('/midtrans/callback', [MidtransController::class, 'callback'])->name('midtrans.callback');
 
-// MENU
-// routes/web.php
-// Route Menu
-Route::get('/menu/{table}', [OrderController::class, 'index'])->name('customer.menu');
-Route::get('/menu/{table}/{menu}', [OrderController::class, 'show'])->name('customer.menu.show');
-
-// Route Keranjang (INI YANG KURANG)
-Route::get('/cart', [CartController::class, 'index'])->name('customer.cart.index');
-Route::post('/cart/sync', [CartController::class, 'sync'])->name('customer.cart.sync');
-
-// Route Checkout & Payment
-Route::get('/checkout', [CheckoutController::class, 'index'])->name('customer.checkout.index');
-Route::post('/checkout', [CheckoutController::class, 'store'])->name('customer.checkout.store');
-Route::get('/payment/cash/{order}', [CheckoutController::class, 'cash'])
-    ->name('customer.payment.cash');
-// routes/web.php
-Route::get('/payment/process/{order}', [CheckoutController::class, 'process'])->name('customer.payment.process');
-// PAYMENT FLOw 
-Route::get('/payment/check/{order}', [CheckoutController::class, 'checkStatus'])
-    ->name('customer.payment.check');
-Route::get('/payment/success/{order}', [CheckoutController::class, 'success'])->name('customer.payment.success');
-
-
-
-
-// ================= 🔥 API / AJAX =================
-
-// 🔥 CEK STATUS PAYMENT (WAJIB BUAT QRIS REALTIME)
-Route::get('/api/check-payment/{order}', function ($id) {
-
-    $order = \App\Models\Order::find($id);
-
-    if (!$order) {
-        return response()->json(['status' => 'not_found']);
-    }
-
-    return response()->json([
-        'status' => $order->status,
-        'order_id' => $order->id
-    ]);
-});
-
-
-// ================= 🔥 MIDTRANS CALLBACK =================
-// ❗ HARUS DI LUAR AUTH
-Route::post('/midtrans/callback', [MidtransController::class, 'callback']);
-
-
-// ================= AUTH ROUTES =================
 require __DIR__ . '/auth.php';

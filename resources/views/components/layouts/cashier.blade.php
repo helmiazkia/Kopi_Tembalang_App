@@ -1,66 +1,80 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'Kasir Dashboard' }}</title>
+    <title>{{ $title ?? 'Kasir Dashboard' }} | Kopi Tembalang</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+    </style>
 </head>
 
-<body class="bg-gray-50 min-h-screen flex flex-col">
-
-    <div class="drawer lg:drawer-open flex-1">
+<body class="bg-slate-50 antialiased">
+    <div class="drawer lg:drawer-open h-screen">
         <input id="my-drawer-4" type="checkbox" class="drawer-toggle" />
 
-        <div class="drawer-content flex flex-col min-h-screen">
+        <div class="drawer-content flex flex-col h-screen overflow-y-auto">
 
             {{-- Navbar --}}
-            <nav class="sticky top-0 z-30 flex items-center gap-3 px-4 py-3
-                        bg-white border-b border-gray-100">
+            <nav class="navbar sticky top-0 z-30 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 px-4">
+                <div class="flex-none lg:hidden">
+                    <label for="my-drawer-4" class="btn btn-square btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </label>
+                </div>
 
-                {{-- Hamburger (mobile only) --}}
-                <label for="my-drawer-4" aria-label="open sidebar"
-                    class="lg:hidden btn btn-ghost btn-sm btn-square rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <line x1="3" y1="6" x2="21" y2="6" />
-                        <line x1="3" y1="12" x2="21" y2="12" />
-                        <line x1="3" y1="18" x2="21" y2="18" />
-                    </svg>
-                </label>
-
-                {{-- Page title --}}
-                <h1 class="text-sm font-semibold text-gray-800 tracking-tight">
+                <div class="flex-1 px-2 mx-2 font-bold text-slate-700">
+                    <span class="hidden lg:inline text-xs opacity-50 uppercase tracking-widest mr-2">Halaman:</span>
                     {{ $title ?? 'Dashboard' }}
-                </h1>
+                </div>
 
-                <div class="flex-1"></div>
-
-                {{-- User badge --}}
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center
-                                text-xs font-semibold text-violet-700">
-                        {{ strtoupper(substr(Auth::user()->name ?? 'K', 0, 2)) }}
+                <div class="flex-none gap-2">
+                    <div class="dropdown dropdown-end">
+                        <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+                            <div class="w-10 rounded-full border-2 border-[#D4E971] flex items-center justify-center bg-[#D4E971]">
+                                <span class="text-xs font-bold text-black">
+                                    {{ strtoupper(substr(Auth::user()->name ?? 'K', 0, 2)) }}
+                                </span>
+                            </div>
+                        </div>
+                        <ul tabindex="0" class="mt-3 z-[1] p-2 shadow-xl menu menu-sm dropdown-content bg-base-100 rounded-box w-52 border border-slate-100">
+                            <li>
+                                <span class="font-semibold text-slate-700">{{ Auth::user()->name ?? 'Kasir' }}</span>
+                            </li>
+                            <li><a>Profil</a></li>
+                            <li><a>Pengaturan</a></li>
+                        </ul>
                     </div>
-                    <span class="hidden sm:block text-sm text-gray-700 font-medium">
-                        {{ Auth::user()->name ?? 'Kasir' }}
-                    </span>
                 </div>
             </nav>
 
             {{-- Page content --}}
-            <main class="flex-1 p-5 md:p-6">
-                {{ $slot }}
+            <main class="p-6 lg:p-8 flex-grow">
+                <div class="max-w-7xl mx-auto">
+                    {{ $slot }}
+                </div>
             </main>
 
             {{-- Footer --}}
-            <footer class="px-6 py-4 border-t border-gray-100 bg-white">
-                <p class="text-xs text-gray-400 text-center">
-                    © {{ date('Y') }} BengKod. All rights reserved.
-                </p>
+            <footer class="footer footer-center p-6 bg-white border-t border-slate-200 text-slate-400">
+                <aside>
+                    <p class="text-xs font-medium">© {{ date('Y') }} <span class="text-slate-900 font-bold">Kopi Tembalang</span>. Built with ❤️ for better coffee experience.</p>
+                </aside>
             </footer>
 
         </div>

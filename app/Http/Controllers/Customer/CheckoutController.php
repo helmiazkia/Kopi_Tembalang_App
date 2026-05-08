@@ -8,48 +8,38 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Midtrans\Snap;
 use Midtrans\Config;
+use Carbon\Carbon;
 
 class CheckoutController extends Controller
 {
-    /**
-     * 🔥 MENAMPILKAN HALAMAN FORM DATA PEMESAN
-     * Method ini yang menyebabkan error jika tidak ada.
-     */
-    public function index(Request $request)
+    public function index(Request $request, $tableId)
     {
-        
-        // 1. Ambil data table
-        $table = Table::findOrFail($request->table);
+        $table = Table::findOrFail($tableId);
 
-        // 2. Jika keranjang kosong, redirect balik ke menu meja tersebut
         if (!session('cart') || count(session('cart')) == 0) {
-            // 🔥 PERBAIKAN: Tambahkan parameter $table->id atau $table
             return redirect()->route('customer.menu', $table->id)->with('error', 'Keranjang Anda masih kosong.');
         }
 
         return view('customer.checkout.index', compact('table'));
     }
 
-    /**
-     * 🔥 PROSES SIMPAN PESANAN DAN REDIRECT PEMBAYARAN
-     */
-    public function store(Request $request)
+    public function store(Request $request, $tableId)
     {
         $request->validate([
-            'table_id'       => 'required|exists:tables,id',
             'customer_name'  => 'required|string|max:255',
-            'email'          => 'required|email',
+            'email'          => 'nullable|email', // Perbaikan: nullable jika opsional
             'phone'          => 'required',
             'payment_method' => 'required|in:cash,qris'
         ]);
 
         $cart = session('cart');
         $totalPrice = session('cart_total');
+        $table = Table::findOrFail($tableId);
 
-        return DB::transaction(function () use ($request, $cart, $totalPrice) {
-            // 1. Buat Order (Langsung Dine In)
+        return DB::transaction(function () use ($request, $cart, $totalPrice, $table) {
+            // 1. Buat Order
             $order = Order::create([
-                'table_id'      => $request->table_id,
+                'table_id'      => $table->id,
                 'customer_name' => $request->customer_name,
                 'email'         => $request->email,
                 'phone'         => $request->phone,
@@ -59,32 +49,34 @@ class CheckoutController extends Controller
                 'is_printed'    => false,
             ]);
 
-            // 2. Simpan Items (Looping dari session cart)
+            // 2. Simpan Items
             foreach ($cart as $item) {
-                $orderItem = OrderItem::create([
+                OrderItem::create([
                     'order_id' => $order->id,
                     'menu_id'  => $item['id'],
-                    'qty'      => 1,
+                    'qty'      => $item['qty'] ?? 1, // Ambil qty asli dari cart
                     'price'    => $item['price'],
-                    'subtotal' => $item['price'], // Sederhanakan atau tambah logika opsi
+                    'subtotal' => $item['price'] * ($item['qty'] ?? 1),
                     'notes'    => $item['notes'] ?? null
                 ]);
+                // Jika ada logika OrderItemOption, masukkan di sini
             }
 
             // 3. Buat Data Payment
-            $transactionId = 'CUST-' . time() . '-' . $order->id;
+            $transactionId = 'LODO-' . time() . '-' . $order->id;
             $payment = Payment::create([
                 'order_id'       => $order->id,
                 'transaction_id' => $transactionId,
                 'method'         => $request->payment_method,
                 'amount'         => $totalPrice,
                 'status'         => 'pending',
-                'expired_at'     => now()->addMinutes(15)
+                'expired_at'     => Carbon::now()->addMinutes(15)
             ]);
 
             // 4. LOGIKA REDIRECT
+            session()->forget(['cart', 'cart_total']); // Hapus cart lebih awal agar aman
+
             if ($request->payment_method === 'qris') {
-                // Alur Midtrans
                 Config::$serverKey = config('midtrans.serverKey');
                 Config::$isProduction = config('midtrans.isProduction', false);
 
@@ -98,34 +90,22 @@ class CheckoutController extends Controller
                         'email'      => $order->email,
                         'phone'      => $order->phone,
                     ],
-
                 ];
 
                 try {
                     $snapToken = Snap::getSnapToken($params);
                     $payment->update(['snap_token' => $snapToken]);
-
-                    // Hapus cart setelah berhasil generate snap token
-                    session()->forget(['cart', 'cart_total']);
-
-                    // Redirect ke halaman khusus yang memicu popup Midtrans
                     return redirect()->route('customer.payment.process', $order->id);
                 } catch (\Exception $e) {
-                    return back()->with('error', 'Gagal terhubung ke Midtrans: ' . $e->getMessage());
+                    return back()->with('error', 'Midtrans Error: ' . $e->getMessage());
                 }
             }
 
-            // Alur Cash (Tunai ke Kasir)
-            session()->forget(['cart', 'cart_total']);
-            return redirect()->route('customer.payment.cash', [
-                'order' => $order->id,
-                'clear_cart' => 'true' // Ini pemicu JavaScript di atas
-            ]);
+            // Alur Cash (Sesuai rute yang baru ditambah)
+            return redirect()->route('customer.payment.cash', $order->id);
         });
     }
-    /**
-     * Menampilkan QR Code untuk pembayaran tunai di kasir.
-     */
+
     public function cash(Order $order)
     {
         $order->load(['table', 'payment']);
@@ -134,29 +114,19 @@ class CheckoutController extends Controller
 
     public function process(Order $order)
     {
-        // Load payment untuk mengambil snap_token
         $order->load('payment');
-
-        // Kirim data ke view khusus pembayaran
         return view('customer.payment.process', compact('order'));
     }
 
-    /**
-     * Cek status pembayaran untuk pengalihan otomatis (digunakan oleh JavaScript Polling)
-     */
     public function checkStatus(Order $order)
     {
-        return response()->json([
-            'status' => $order->status // akan mengembalikan 'pending', 'paid', atau 'cancelled'
-        ]);
+        return response()->json(['status' => $order->status]);
     }
-    /**
-     * 🔥 HALAMAN SETELAH PEMBAYARAN BERHASIL (SUCCESS PAGE)
-     */
+
     public function success(Order $order)
     {
-        // Load item dan menu agar bisa ditampilkan di struk digital customer
-        $order->load('items.menu');
+        // Load items, menu, dan table untuk informasi lengkap di struk
+        $order->load(['items.menu', 'table']);
 
         return view('customer.payment.success', compact('order'));
     }

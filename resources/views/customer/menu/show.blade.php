@@ -194,13 +194,15 @@
             <input type="hidden" id="table_id" value="{{ $table->id }}">
 
             @foreach($menu->options as $option)
-            <div class="option-group" data-option-name="{{ $option->name }}">
+            <div class="option-group" data-option-id="{{ $option->id }}" data-option-type="{{ $option->type }}">
                 <div class="option-title">
                     {{ $option->name }}
-                    <span>Wajib</span>
+                    <span>{{ $option->type === 'select' ? 'Wajib' : 'Opsional' }}</span>
                 </div>
 
                 @foreach($option->items as $item)
+                @if($option->type === 'select')
+                {{-- UI UNTUK SELECT (PILIH SATU) --}}
                 <label class="option-item">
                     <input type="radio"
                         name="option_{{ $option->id }}"
@@ -211,6 +213,26 @@
                     <div class="item-info">{{ $item->name }}</div>
                     <div class="item-price">+Rp {{ number_format($item->price, 0, ',', '.') }}</div>
                 </label>
+                @else
+                {{-- UI UNTUK CHECKBOX (TAMBAH BANYAK / COUNTER) --}}
+                <div class="option-item flex items-center justify-between">
+                    <div class="flex-grow">
+                        <div class="item-info">{{ $item->name }}</div>
+                        <div class="item-price">+Rp {{ number_format($item->price, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="flex items-center gap-3 bg-slate-50 p-1 rounded-xl border border-slate-100">
+                        <button type="button"
+                            onclick="updateCustomerOptQty({{ $item->id }}, -1, {{ $item->price }}, '{{ $item->name }}')"
+                            class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm font-black text-slate-400">-</button>
+
+                        <span id="qty-customer-opt-{{ $item->id }}" class="text-xs font-black text-slate-800 min-w-[20px] text-center">0</span>
+
+                        <button type="button"
+                            onclick="updateCustomerOptQty({{ $item->id }}, 1, {{ $item->price }}, '{{ $item->name }}')"
+                            class="w-8 h-8 flex items-center justify-center bg-slate-900 text-[#D4E971] rounded-lg shadow-md font-black">+</button>
+                    </div>
+                </div>
+                @endif
                 @endforeach
             </div>
             @endforeach
@@ -226,47 +248,71 @@
 
     @push('scripts')
     <script>
+        let checkboxOptions = {};
+
+        // Fungsi untuk menambah/kurang qty checkbox (topping)
+        function updateCustomerOptQty(itemId, change, price, name) {
+            const qtySpan = document.getElementById(`qty-customer-opt-${itemId}`);
+            let currentQty = parseInt(qtySpan.innerText);
+            let newQty = currentQty + change;
+
+            if (newQty < 0) newQty = 0;
+            qtySpan.innerText = newQty;
+
+            if (newQty > 0) {
+                checkboxOptions[itemId] = {
+                    name: name,
+                    price: price,
+                    qty: newQty
+                };
+            } else {
+                delete checkboxOptions[itemId];
+            }
+        }
+
         document.getElementById('orderForm').addEventListener('submit', function(e) {
             e.preventDefault();
-
             const btn = document.getElementById('submitBtn');
             const tableId = document.getElementById('table_id').value;
 
             btn.disabled = true;
             btn.innerText = "Menambahkan...";
 
-            let selectedOptions = {};
+            let finalSelectedOptions = {};
             let optionsValid = true;
 
-            // Validasi Opsi
-            const optionGroups = document.querySelectorAll('.option-group');
-            optionGroups.forEach(group => {
+            // 1. Ambil data dari tipe SELECT (Radio)
+            const selectGroups = document.querySelectorAll('.option-group[data-option-type="select"]');
+            selectGroups.forEach(group => {
                 const checkedRadio = group.querySelector('input[type="radio"]:checked');
                 if (!checkedRadio) {
                     optionsValid = false;
                 } else {
-                    const optionId = checkedRadio.name.replace('option_', '');
-                    selectedOptions[optionId] = {
+                    const itemId = checkedRadio.value;
+                    finalSelectedOptions[itemId] = {
                         name: checkedRadio.dataset.itemName,
-                        price: parseInt(checkedRadio.dataset.price)
+                        price: parseInt(checkedRadio.dataset.price),
+                        qty: 1
                     };
                 }
             });
 
             if (!optionsValid) {
-                alert('Mohon pilih opsi yang wajib diisi terlebih dahulu 🙏');
+                alert('Mohon pilih opsi wajib terlebih dahulu 🙏');
                 btn.disabled = false;
                 btn.innerText = "Tambah ke Keranjang";
                 return;
             }
 
-            // Buat Object Item
+            // 2. Gabungkan dengan data CHECKBOX
+            Object.assign(finalSelectedOptions, checkboxOptions);
+
             let item = {
                 id: document.getElementById('menu_id').value,
                 name: document.getElementById('menu_name').value,
                 price: parseInt(document.getElementById('menu_price').value),
                 image: document.getElementById('menu_image').value,
-                options: selectedOptions,
+                options: finalSelectedOptions,
                 notes: document.getElementById('notes').value,
                 timestamp: new Date().getTime()
             };
@@ -274,18 +320,22 @@
             // Simpan ke LocalStorage
             try {
                 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                cart.push(item);
-                localStorage.setItem('cart', JSON.stringify(cart));
 
-                // Berhasil
-                setTimeout(() => {
-                    window.location.href = "/menu/" + tableId;
-                }, 300);
+                // Cek jika ini proses EDIT (dari edit_index di URL)
+                const urlParams = new URLSearchParams(window.location.search);
+                const editIndex = urlParams.get('edit_index');
+
+                if (editIndex !== null) {
+                    cart[editIndex] = item;
+                } else {
+                    cart.push(item);
+                }
+
+                localStorage.setItem('cart', JSON.stringify(cart));
+                window.location.href = (editIndex !== null) ? "/menu/cart/" + tableId : "/menu/" + tableId;
             } catch (error) {
-                console.error("Gagal menyimpan ke cart:", error);
                 alert("Terjadi kesalahan sistem.");
                 btn.disabled = false;
-                btn.innerText = "Tambah ke Keranjang";
             }
         });
     </script>

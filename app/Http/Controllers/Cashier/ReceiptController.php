@@ -9,16 +9,12 @@ class ReceiptController extends Controller
 {
     public function show(Order $order)
     {
-        // 🔥 PASTIKAN ORDER SUDAH DIBAYAR
-        if ($order->status !== 'paid') {
-            abort(403, 'Order belum dibayar');
+        // Setiap kali halaman struk dibuka, pastikan database tahu ini sudah diprint
+        if (!$order->is_printed) {
+            $order->update(['is_printed' => true]);
         }
 
-        $order->load([
-            'items.menu',
-            'items.options.optionItem'
-        ]);
-
+        $order->load('items.menu', 'payment');
         return view('cashier.receipt.show', compact('order'));
     }
 }

@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
 
+            // Relasi ke Meja
             $table->foreignId('table_id')
                 ->nullable()
                 ->constrained()
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->enum('order_type', ['dine_in', 'takeaway'])
                 ->default('takeaway');
 
+            // Relasi ke User (Kasir/Admin yang melayani)
             $table->foreignId('cashier_id')
                 ->nullable()
                 ->constrained('users')
@@ -26,20 +28,20 @@ return new class extends Migration
 
             $table->string('customer_name');
             $table->string('email')->nullable();
-
             $table->string('phone')->nullable();
             $table->text('notes')->nullable();
 
             $table->integer('total_price');
 
+            // Status yang disederhanakan
             $table->enum('status', [
                 'pending',
                 'paid',
                 'preparing',
-                'ready',
                 'done',
                 'cancelled'
             ])->default('pending');
+
             $table->boolean('is_printed')->default(false);
 
             $table->timestamps();

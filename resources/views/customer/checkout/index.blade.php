@@ -2,7 +2,7 @@
     <div class="flex flex-col min-h-screen bg-[#fafafa]">
 
         <main class="p-6 space-y-8">
-            
+
             <!-- HEADER SECTION -->
             <div class="relative flex items-center justify-center">
                 <div class="absolute left-0">
@@ -24,7 +24,7 @@
             </div>
 
             <!-- FORM -->
-            <form id="mainOrderForm" method="POST" action="{{ route('customer.checkout.store') }}" class="space-y-6">
+            <form id="mainOrderForm" method="POST" action="{{ route('customer.checkout.store', ['table' => $table->id]) }}" class="space-y-6">
                 @csrf
                 <input type="hidden" name="table_id" value="{{ $table->id }}">
 
@@ -44,13 +44,13 @@
                 <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 space-y-5">
                     <div class="space-y-1.5">
                         <label class="text-[9px] font-black uppercase text-slate-400 ml-2 tracking-widest">Nama Lengkap</label>
-                        <input id="input_name" name="customer_name" placeholder="Siapa namamu?" required 
+                        <input id="input_name" name="customer_name" placeholder="Siapa namamu?" required
                             class="w-full px-5 py-4 rounded-xl bg-slate-50 border-2 border-transparent focus:border-[#D4E971] focus:bg-white outline-none transition-all duration-300 font-bold text-sm text-slate-700">
                     </div>
 
                     <div class="space-y-1.5">
                         <label class="text-[9px] font-black uppercase text-slate-400 ml-2 tracking-widest">WhatsApp</label>
-                        <input id="input_phone" name="phone" type="tel" placeholder="0812xxxx" required 
+                        <input id="input_phone" name="phone" type="tel" placeholder="0812xxxx" required
                             class="w-full px-5 py-4 rounded-xl bg-slate-50 border-2 border-transparent focus:border-[#D4E971] focus:bg-white outline-none transition-all duration-300 font-bold text-sm text-slate-700">
                     </div>
 
@@ -86,7 +86,9 @@
                 <div class="pt-4 pb-10">
                     <button type="button" onclick="openConfirmModal()" class="w-full shadow-[0_6px_0_0_#0f172a] active:shadow-none active:translate-y-[6px] bg-[#D4E971] text-slate-900 py-5 rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] border-2 border-slate-900 transition-all flex items-center justify-center gap-3">
                         <span>Pesan & Bayar Sekarang</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
                     </button>
                 </div>
             </form>
@@ -127,7 +129,7 @@
             const method = document.querySelector('input[name="payment_method"]:checked').value;
 
             // Validasi sederhana sebelum buka modal
-            if(!name || !phone) {
+            if (!name || !phone) {
                 alert('Tolong isi nama dan nomor WhatsApp dulu ya! 🙏');
                 return;
             }

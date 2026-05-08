@@ -7,56 +7,61 @@ use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Midtrans\Snap;
-use Midtrans\Config;
+use Carbon\Carbon;
 
 class OrderListController extends Controller
 {
     public function index()
     {
-        // Mengambil order yang masih pending beserta data payment-nya
+        // 1. Ambil order PENDING (Belum Bayar) yang belum kadaluarsa
         $pendingOrders = Order::with(['table', 'payment'])
             ->where('status', 'pending')
             ->whereHas('payment', function ($q) {
                 $q->where(function ($query) {
                     $query->whereNull('expired_at')
-                        ->orWhere('expired_at', '>', now());
+                        ->orWhere('expired_at', '>', Carbon::now());
                 });
             })
             ->latest()
             ->get();
 
-        $paidOrders = Order::where('status', 'paid')
-            ->latest()
-            ->limit(10)
+        // 2. PERBAIKAN RIWAYAT: Ambil status 'paid', 'preparing', dan 'done'
+        // Kita masukkan 'done' juga sebagai jaga-jaga jika ada data lama
+        $paidOrders = Order::whereIn('status', ['paid', 'preparing', 'done', 'done'])
+            ->whereDate('updated_at', Carbon::today()) 
+            ->latest('updated_at')
+            ->limit(15) // Kita perbanyak limitnya agar lebih terlihat
             ->get();
 
         return view('cashier.orderList.index', compact('pendingOrders', 'paidOrders'));
     }
 
     /**
-     * 🔥 HANYA AMBIL TOKEN YANG SUDAH ADA
+     * 🔥 SELESAIKAN PESANAN (Ubah ke DONE)
+     */
+    public function markAsDone(Order $order)
+    {
+        // Pesanan hanya bisa di-done-kan jika sudah dibayar (paid/preparing)
+        if ($order->status === 'pending') {
+            return back()->with('error', 'Tagihan belum dibayar!');
+        }
+
+        $order->update(['status' => 'done']);
+
+        return back()->with('success', 'Pesanan #' . $order->id . ' selesai.');
+    }
+
+    /**
+     * Ambil Snap Token Midtrans
      */
     public function getSnapToken(Order $order)
     {
-        // Ambil payment yang relasinya sudah dibuat di OrderController@store
         $payment = $order->payment;
 
-        // Validasi apakah payment ada dan punya token
         if (!$payment || !$payment->snap_token) {
-            return response()->json([
-                'error' => 'Token pembayaran tidak ditemukan. Silakan buat ulang pesanan di Kasir.'
-            ], 404);
+            return response()->json(['error' => 'Token tidak ditemukan.'], 404);
         }
 
-        // Cek apakah token sudah expired di database kita
-        if ($payment->expired_at && now()->gt($payment->expired_at)) {
-            return response()->json([
-                'error' => 'Waktu pembayaran (10 menit) telah habis. Silakan buat pesanan baru.'
-            ], 410);
-        }
-
-        // Kirimkan token yang SUDAH ADA di database
         return response()->json([
             'snap_token' => $payment->snap_token,
             'order_id' => $order->id
@@ -64,30 +69,15 @@ class OrderListController extends Controller
     }
 
     /**
-     * 🔥 PROSES CASH (Sama seperti sebelumnya)
+     * Proses Bayar Cash Manual
      */
     public function pay(Order $order)
     {
-        return DB::transaction(function () use ($order) {
-            $payment = $order->payment;
-
-            if ($payment) {
-                $payment->update([
-                    'method' => 'cash',
-                    'status' => 'paid',
-                    'paid_at' => now()
-                ]);
-            }
-
-            $order->update(['status' => 'paid']);
-
-            return redirect()->route('cashier.receipt.show', $order->id)
-                ->with('success', 'Pembayaran tunai berhasil.');
-        });
+        return $this->processCashPayment($order);
     }
 
     /**
-     * 🔥 SCAN UNTUK BAYAR CASH
+     * Scan Barcode untuk Bayar
      */
     public function scan(Request $request)
     {
@@ -95,33 +85,15 @@ class OrderListController extends Controller
         $order = Order::find($request->code);
 
         if (!$order) return back()->withErrors(['error' => 'Order tidak ditemukan']);
-        if ($order->status == 'paid') return redirect()->route('cashier.receipt.show', $order->id);
+        
+        // Jika sudah bayar/selesai, langsung ke struk
+        if (in_array($order->status, ['paid', 'preparing', 'done', 'done    '])) {
+            return redirect()->route('cashier.receipt.show', $order->id);
+        }
 
-        // Jalankan fungsi private dan dapatkan hasilnya (Redirect)
         return $this->processCashPayment($order);
     }
-    public function checkUnprinted()
-    {
-        $order = Order::where('status', 'paid')
-            ->where('is_printed', false)
-            ->first();
 
-        return response()->json([
-            'has_new' => $order ? true : false,
-            'order_id' => $order ? $order->id : null
-        ]);
-    }
-
-    public function markAsPrinted(Order $order)
-    {
-        $order->update(['is_printed' => true]);
-        return response()->json(['success' => true]);
-    }
-    public function receiptKitchen(Order $order)
-    {
-        $order->load('items.menu', 'items.options.menuOptionItem');
-        return view('cashier.receipt.kitchen', compact('order'));
-    }
     private function processCashPayment(Order $order)
     {
         try {
@@ -132,16 +104,40 @@ class OrderListController extends Controller
                     $payment->update([
                         'method' => 'cash',
                         'status' => 'paid',
-                        'paid_at' => now()
+                        'paid_at' => Carbon::now()
                     ]);
                 }
 
-                $order->update(['status' => 'paid']);
+                // Masuk ke status 'paid' agar barista tahu harus mulai bikin kopi
+                $order->update([
+                    'status' => 'paid',
+                    'is_printed' => true 
+                ]);
             });
 
-            return redirect()->route('cashier.receipt.show', $order->id)->with('success', 'Pembayaran tunai berhasil.');
+            return redirect()->route('cashier.receipt.show', $order->id)
+                ->with('success', 'Pembayaran tunai berhasil.');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Gagal memproses pembayaran: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Gagal: ' . $e->getMessage()]);
         }
     }
-}
+
+    public function checkUnprinted()
+    {
+        // Cek order paid/preparing yang belum dicetak
+        $order = Order::whereIn('status', ['paid', 'preparing'])
+            ->where('is_printed', false)
+            ->first();
+
+        return response()->json([
+            'has_new' => !!$order,
+            'order_id' => $order?->id
+        ]);
+    }
+
+    public function markAsPrinted(Order $order)
+    {
+        $order->update(['is_printed' => true]);
+        return response()->json(['success' => true]);
+    }
+}   
