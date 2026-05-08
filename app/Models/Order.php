@@ -22,12 +22,15 @@ class Order extends Model
         'notes',
         'total_price',
         'status',
-        'is_printed'
+        'is_printed',
+        'done_at'
+        
     ];
 
     protected $casts = [
         'total_price' => 'integer',
-        'is_printed' => 'boolean'
+        'is_printed' => 'boolean',
+        'done_at' => 'datetime'
     ];
 
     public function table()
