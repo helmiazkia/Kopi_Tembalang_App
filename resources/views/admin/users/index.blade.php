@@ -190,7 +190,6 @@
                 <div class="form-control">
                     <label class="label"><span class="label-text font-bold text-slate-600">Role</span></label>
                     <select name="role" class="select select-bordered w-full">
-                        <option value="user">User</option>
                         <option value="admin">Admin</option>
                         <option value="cashier">Cashier</option>
                         <option value="kitchen">Kitchen</option>
@@ -240,7 +239,6 @@
                 <div class="form-control">
                     <label class="label"><span class="label-text font-bold text-slate-600">Role</span></label>
                     <select id="edit_role" name="role" class="select select-bordered w-full">
-                        <option value="user">User</option>
                         <option value="admin">Admin</option>
                         <option value="cashier">Cashier</option>
                         <option value="kitchen">Kitchen</option>
