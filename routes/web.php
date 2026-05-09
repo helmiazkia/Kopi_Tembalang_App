@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MenuOptionItemController;
 use App\Http\Controllers\Admin\MenuOptionController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\TableController;
 
@@ -44,15 +45,26 @@ Route::middleware('auth')->group(function () {
     // ================= ADMIN (Role: admin) =================
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        // ✅ Tambahkan ini
+        Route::get('/dashboard/export-top-menus', [DashboardController::class, 'exportTopMenus'])
+            ->name('dashboard.exportTopMenus');
+
         Route::resource('users', UserController::class);
         Route::resource('menus', MenuController::class);
         Route::resource('categories', CategoryController::class);
         Route::resource('menu_option_items', MenuOptionItemController::class);
         Route::resource('menu_options', MenuOptionController::class);
         Route::resource('tables', TableController::class);
-        Route::resource('orders', AdminOrderController::class)->only(['index', 'show']);
+
         Route::get('tables/{table}/download-qr', [TableController::class, 'downloadQR'])->name('tables.qr.download');
+
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/', [ReportController::class, 'index'])->name('index');
+            Route::get('/export', [ReportController::class, 'export'])->name('export');
+        });
     });
+
 
     // ================= KITCHEN (Role: kitchen, admin) =================
     // Admin diberikan akses ke kitchen untuk monitoring
