@@ -28,7 +28,7 @@ class OrderListController extends Controller
         // 2. PERBAIKAN RIWAYAT: Ambil status 'paid', 'preparing', dan 'done'
         // Kita masukkan 'done' juga sebagai jaga-jaga jika ada data lama
         $paidOrders = Order::whereIn('status', ['paid', 'preparing', 'done', 'done'])
-            ->whereDate('updated_at', Carbon::today()) 
+            ->whereDate('updated_at', Carbon::today())
             ->latest('updated_at')
             ->limit(15) // Kita perbanyak limitnya agar lebih terlihat
             ->get();
@@ -85,7 +85,7 @@ class OrderListController extends Controller
         $order = Order::find($request->code);
 
         if (!$order) return back()->withErrors(['error' => 'Order tidak ditemukan']);
-        
+
         // Jika sudah bayar/selesai, langsung ke struk
         if (in_array($order->status, ['paid', 'preparing', 'done', 'done    '])) {
             return redirect()->route('cashier.receipt.show', $order->id);
@@ -93,6 +93,7 @@ class OrderListController extends Controller
 
         return $this->processCashPayment($order);
     }
+
 
     private function processCashPayment(Order $order)
     {
@@ -102,16 +103,17 @@ class OrderListController extends Controller
 
                 if ($payment) {
                     $payment->update([
+                        'cashier_id' => auth()->id(),
                         'method' => 'cash',
                         'status' => 'paid',
                         'paid_at' => Carbon::now()
                     ]);
                 }
 
-                // Masuk ke status 'paid' agar barista tahu harus mulai bikin kopi
                 $order->update([
                     'status' => 'paid',
-                    'is_printed' => true 
+                    'is_printed' => true,
+                    'cashier_id' => auth()->id(), // ✅ Tambahkan ini
                 ]);
             });
 
@@ -140,4 +142,4 @@ class OrderListController extends Controller
         $order->update(['is_printed' => true]);
         return response()->json(['success' => true]);
     }
-}   
+}

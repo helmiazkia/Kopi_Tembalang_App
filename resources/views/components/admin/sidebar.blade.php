@@ -192,20 +192,20 @@
 
             {{-- Pesanan --}}
             <li>
-                <a href="{{ route('admin.orders.index') }}"
+                <a href="{{ route('admin.reports.index') }}"
                     class="flex items-center gap-4 p-3 rounded-2xl transition-all duration-300
                            is-drawer-close:tooltip is-drawer-close:tooltip-right
-                           {{ request()->routeIs('admin.orders.*')
+                           {{ request()->routeIs('admin.reports.*')
                                ? 'bg-[#D4E971] text-black shadow-lg shadow-[#D4E971]/30 active-indicator'
                                : 'hover:bg-base-200 text-base-content/80' }}"
-                    data-tip="Pesanan">
+                    data-tip="Laporan">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                         fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
                         <path d="M3 6h18"/>
                         <path d="M16 10a4 4 0 0 1-8 0"/>
                     </svg>
-                    <span class="is-drawer-close:hidden font-bold text-[14px]">Pesanan</span>
+                    <span class="is-drawer-close:hidden font-bold text-[14px]">Laporan</span>
                 </a>
             </li>
         </ul>

@@ -28,10 +28,10 @@ class UserSeeder extends Seeder
         ]);
         User::create([
             'name'     => 'Dapur Lodo (KDS)',
-            'email'    => 'kitchen@lodokopi.com',
+            'email'    => ' ',
             'password' => Hash::make('dapur123'),
             'role'     => 'kitchen',
             'phone'    => '08123456781',
         ]);
     }
-}
+}   

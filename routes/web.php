@@ -11,7 +11,6 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MenuOptionItemController;
 use App\Http\Controllers\Admin\MenuOptionController;
 use App\Http\Controllers\Admin\ReportController;
-use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\TableController;
 
 // KITCHEN
@@ -21,6 +20,7 @@ use App\Http\Controllers\Kitchen\KitchenController;
 use App\Http\Controllers\Cashier\OrderController as CashierOrderController;
 use App\Http\Controllers\Cashier\DashboardController as CashierDashboardController;
 use App\Http\Controllers\Cashier\OrderListController;
+use App\Http\Controllers\Cashier\MenuController as CashierMenuController;
 use App\Http\Controllers\Cashier\ReceiptController;
 
 // CUSTOMER
@@ -85,6 +85,10 @@ Route::middleware('auth')->group(function () {
         // Payment & Snap
         Route::get('orderList/snap/{order}', [OrderListController::class, 'getSnapToken'])->name('orderList.snap');
         Route::get('orderList/pay/{order}', [OrderListController::class, 'pay'])->name('orderList.pay');
+
+        // Menu (toggle ketersediaan saja)
+        Route::get('menus', [CashierMenuController::class, 'index'])->name('menus.index');
+        Route::patch('menus/{menu}/toggle', [CashierMenuController::class, 'toggleAvailability'])->name('menus.toggle');
 
         // Receipt & Printing
         Route::get('receipt/{order}', [ReceiptController::class, 'show'])->name('receipt.show');
