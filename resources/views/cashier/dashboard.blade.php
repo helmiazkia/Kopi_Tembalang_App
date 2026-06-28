@@ -13,11 +13,20 @@
                 <h1 class="text-2xl font-black text-slate-900 tracking-tight">
                     Selamat
                     @php
-                        $hour = \Carbon\Carbon::now()->hour;
-                        echo $hour < 12 ? 'Pagi' : ($hour < 18 ? 'Siang' : 'Malam');
-                    @endphp,
-                    {{ explode(' ', auth()->user()->name)[0] }}!
-                </h1>
+                    $hour = \Carbon\Carbon::now()->hour;
+                    if ($hour < 11) {
+                        $greeting='Pagi' ;
+                        } elseif ($hour < 15) {
+                        $greeting='Siang' ;
+                        } elseif ($hour < 18) {
+                        $greeting='Sore' ;
+                        } else {
+                        $greeting='Malam' ;
+                        }
+                        echo $greeting;
+                        @endphp,
+                        {{ explode(' ', auth()->user()->name)[0] }}!
+                        </h1>
             </div>
         </div>
 
@@ -26,8 +35,7 @@
                 type="date"
                 name="date"
                 value="{{ $filterDate->format('Y-m-d') }}"
-                class="input input-bordered bg-white border-slate-200 text-slate-600 font-semibold rounded-2xl text-sm"
-            >
+                class="input input-bordered bg-white border-slate-200 text-slate-600 font-semibold rounded-2xl text-sm">
             <button type="submit" class="btn bg-slate-900 hover:bg-slate-700 text-[#D4E971] border-none rounded-2xl font-black text-xs tracking-widest px-6 transition-all duration-300">
                 Terapkan
             </button>
@@ -42,7 +50,7 @@
             <div class="flex justify-between items-start mb-5">
                 <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                 </div>
                 <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-xl uppercase tracking-widest">Cash</span>
@@ -56,7 +64,7 @@
             <div class="flex justify-between items-start mb-5">
                 <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
                 </div>
                 <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-xl uppercase tracking-widest">QRIS</span>
@@ -71,7 +79,7 @@
             <div class="flex justify-between items-start mb-5">
                 <div class="p-3 bg-[#D4E971] text-black rounded-2xl">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
                 </div>
                 <span class="text-[10px] font-black text-[#D4E971] border border-[#D4E971]/30 px-2.5 py-1 rounded-xl uppercase tracking-widest">Revenue</span>
@@ -131,9 +139,9 @@
             </div>
 
             @php
-                $totalOrders = ($orderPending + $orderSelesai) ?: 1;
-                $perPending  = $orderPending / $totalOrders * 100;
-                $perSelesai  = $orderSelesai / $totalOrders * 100;
+            $totalOrders = ($orderPending + $orderSelesai) ?: 1;
+            $perPending = $orderPending / $totalOrders * 100;
+            $perSelesai = $orderSelesai / $totalOrders * 100;
             @endphp
 
             <div class="space-y-7 flex-1">
@@ -179,11 +187,11 @@
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        Chart.defaults.color       = '#94a3b8';
+        Chart.defaults.color = '#94a3b8';
         Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
         Chart.defaults.font.weight = '700';
 
-        const ctx      = document.getElementById('hourlyServiceChart').getContext('2d');
+        const ctx = document.getElementById('hourlyServiceChart').getContext('2d');
         const gradient = ctx.createLinearGradient(0, 0, 0, 280);
         gradient.addColorStop(0, 'rgba(212, 233, 113, 0.4)');
         gradient.addColorStop(1, 'rgba(212, 233, 113, 0)');
@@ -211,13 +219,21 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: false
+                    },
                     tooltip: {
                         backgroundColor: '#1e293b',
                         padding: 14,
                         cornerRadius: 12,
-                        titleFont: { size: 11, weight: 'normal' },
-                        bodyFont: { size: 14, weight: '800' },
+                        titleFont: {
+                            size: 11,
+                            weight: 'normal'
+                        },
+                        bodyFont: {
+                            size: 14,
+                            weight: '800'
+                        },
                         displayColors: false,
                         callbacks: {
                             label: ctx => ctx.raw + ' Pesanan',
@@ -225,11 +241,27 @@
                     },
                 },
                 scales: {
-                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        }
+                    },
                     y: {
                         beginAtZero: true,
-                        grid: { color: '#f1f5f9', drawBorder: false },
-                        ticks: { font: { size: 10 } },
+                        grid: {
+                            color: '#f1f5f9',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        },
                     },
                 },
             },

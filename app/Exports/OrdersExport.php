@@ -220,7 +220,14 @@ class OrdersExport implements FromCollection, WithHeadings, WithMapping, WithSty
                 $totalRow = $lastDataRow + 1;
                 $sheet->setCellValue("D{$totalRow}", 'TOTAL TRANSAKSI');
                 $sheet->setCellValue("G{$totalRow}", $this->totalRows . ' Nota');
-                $sheet->setCellValue("H{$totalRow}", "=SUM(H4:H{$lastDataRow})");
+                $totalAmount = Order::with(['payment', 'cashier', 'table'])
+                    ->whereBetween('created_at', [
+                        "{$this->startDate} 00:00:00",
+                        "{$this->endDate} 23:59:59",
+                    ])
+                    ->sum('total_price');
+
+                $sheet->setCellValue("H{$totalRow}", $totalAmount);
 
                 $sheet->getStyle("A{$totalRow}:H{$totalRow}")->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => 'D4E971'], 'name' => 'Arial', 'size' => 10],

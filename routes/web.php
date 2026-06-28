@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
 
 // ADMIN
@@ -32,7 +33,19 @@ use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\MidtransController;
 
 // ================= HOME =================
-Route::get('/', fn() => view('welcome'));
+// ================= HOME =================
+Route::get('/', function () {
+    if (!Auth::check()) {
+        return redirect()->route('login');
+    }
+
+    return match (Auth::user()->role) {
+        'admin'    => redirect()->route('admin.dashboard'),
+        'cashier'  => redirect()->route('cashier.dashboard'),
+        'kitchen'  => redirect()->route('kitchen.index'),
+        default    => redirect()->route('login'),
+    };
+});
 
 // ================= AUTH REQUIRED =================
 Route::middleware('auth')->group(function () {
@@ -62,6 +75,8 @@ Route::middleware('auth')->group(function () {
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/', [ReportController::class, 'index'])->name('index');
             Route::get('/export', [ReportController::class, 'export'])->name('export');
+            Route::get('/export-pdf', [ReportController::class, 'exportPdf'])->name('export-pdf');
+
         });
     });
 

@@ -158,7 +158,6 @@ class TopMenusExport implements FromCollection, WithHeadings, WithStyles, WithTi
                 $sheet->setCellValue("D{$totalRow}", "=SUM(D4:D{$lastDataRow})");
 
                 $sheet->getStyle("A{$totalRow}:D{$totalRow}")->applyFromArray([
-                    'font' => ['bold' => true, 'name' => 'Arial', 'size' => 10],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1e293b']],
                     'font' => ['bold' => true, 'color' => ['rgb' => 'D4E971'], 'name' => 'Arial', 'size' => 10],
                 ]);

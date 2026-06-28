@@ -181,7 +181,8 @@
                 {{-- Grid Menu --}}
                 <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 overflow-y-auto no-scrollbar pr-1" style="max-height:62vh;">
                     @forelse($menus as $menu)
-                    <div class="menu-card relative rounded-3xl overflow-hidden {{ !$menu->is_available ? 'out-of-stock' : 'cursor-pointer' }}"
+                    <div class="menu-card relative bg-white rounded-[2rem] border border-slate-100 p-2 transition-all
+            {{ !$menu->is_available ? 'out-of-stock' : 'active:scale-95 shadow-sm cursor-pointer' }}"
                         @if($menu->is_available)
                         onclick="openModal(this)"
                         data-id="{{ $menu->id }}"
@@ -191,21 +192,37 @@
                         data-options='@json($menu->options)'
                         @endif>
 
-                        @if(!$menu->is_available)
-                        <div class="oos-badge">HABIS</div>
-                        @endif
+                        <div class="relative h-40 w-full rounded-[1.6rem] overflow-hidden bg-slate-50">
+                            @if($menu->image)
+                            <img src="{{ asset('images/menu/'.$menu->image) }}"
+                                class="w-full h-full object-cover {{ $menu->is_available ? 'group-hover:scale-110 transition-transform duration-500' : 'grayscale' }}"
+                                alt="{{ $menu->name }}">
+                            @else
+                            <div class="flex items-center justify-center h-full text-3xl opacity-20">☕</div>
+                            @endif
 
-                        <div class="thumb h-36 overflow-hidden bg-slate-100">
-                            <img src="{{ $menu->image ? asset('images/menu/'.$menu->image) : 'https://placehold.co/300x300/f1f5f9/94a3b8?text=Menu' }}"
-                                class="w-full h-full object-cover" alt="{{ $menu->name }}">
+                            @if($menu->is_available)
+                            {{-- Tombol "+" bulat seperti referensi --}}
+                            <div class="absolute bottom-3 right-3 bg-slate-900 text-[#D4E971] w-8 h-8 rounded-xl
+                        flex items-center justify-center font-black shadow-xl">
+                                +
+                            </div>
+                            @else
+                            {{-- Overlay Label Habis --}}
+                            <div class="absolute inset-0 bg-black/10 flex items-center justify-center">
+                                <span class="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-lg">
+                                    HABIS
+                                </span>
+                            </div>
+                            @endif
                         </div>
 
-                        <div class="p-4">
-                            <h3 class="text-[10px] font-extrabold text-slate-700 uppercase leading-tight truncate mb-1">
+                        <div class="p-3">
+                            <h3 class="font-bold text-xs {{ $menu->is_available ? 'text-slate-800' : 'text-slate-400' }} line-clamp-2 leading-tight uppercase mb-1">
                                 {{ $menu->name }}
                             </h3>
-                            <p class="text-sm font-black text-slate-900">
-                                <span class="text-[9px] font-normal opacity-40">Rp</span>{{ number_format($menu->price, 0, ',', '.') }}
+                            <p class="font-black text-sm {{ $menu->is_available ? 'text-slate-900' : 'text-slate-400' }} italic">
+                                Rp {{ number_format($menu->price, 0, ',', '.') }}
                             </p>
                         </div>
                     </div>
@@ -271,11 +288,9 @@
                                     </select>
                                 </div>
                             </div>
-
                             <textarea name="notes" rows="2" placeholder="Catatan pesanan..."
                                 class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[11px] font-bold
-                                   focus:border-[#D4E971] focus:ring-4 focus:ring-[#D4E971]/10 outline-none transition-all resize-none">
-                        </textarea>
+                                   focus:border-[#D4E971] focus:ring-4 focus:ring-[#D4E971]/10 outline-none transition-all resize-none"></textarea>
                         </div>
 
                         {{-- Cart Items --}}

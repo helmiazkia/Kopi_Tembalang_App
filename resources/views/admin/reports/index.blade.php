@@ -37,6 +37,11 @@
                 class="btn bg-emerald-600 hover:bg-emerald-700 text-white border-none rounded-2xl px-6 font-black text-xs tracking-widest shadow-sm shadow-emerald-600/20 transition-all duration-300">
                 Export Excel
             </a>
+            <a
+                href="{{ route('admin.reports.export-pdf', ['start_date' => $startDate, 'end_date' => $endDate]) }}"
+                class="btn bg-rose-600 hover:bg-rose-700 text-white border-none rounded-2xl px-6 font-black text-xs tracking-widest shadow-sm shadow-rose-600/20 transition-all duration-300">
+                Export PDF
+            </a>
         </div>
     </div>
 
