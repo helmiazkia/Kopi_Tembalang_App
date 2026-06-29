@@ -156,11 +156,7 @@
         updateClock();
 
         // 2. AUTO REFRESH (Polling)
-        let currentOrderCount = {
-            {
-                $orders - > count()
-            }
-        };
+        let currentOrderCount = {{ $orders->count() }};
 
         function checkNewOrders() {
             fetch(window.location.href)
