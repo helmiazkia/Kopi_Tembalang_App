@@ -7,7 +7,7 @@
                 <h1 class="text-3xl font-black text-white uppercase italic tracking-tighter">
                     Kitchen <span class="text-[#D4E971] not-italic">Orders.</span>
                 </h1>
-                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">Lodo Kopi Tembalang System</p>
+                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">Kopi Tembalang System</p>
             </div>
 
             <div class="flex items-center gap-6">
