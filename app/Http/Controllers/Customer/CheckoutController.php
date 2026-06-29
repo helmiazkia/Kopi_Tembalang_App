@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Order, Table, Payment, OrderItem};
 use Illuminate\Http\Request;
+use App\Models\{Order, Table, Payment, OrderItem, OrderItemOption, MenuOptionItem};
 use Illuminate\Support\Facades\DB;
 use Midtrans\Snap;
 use Midtrans\Config;
@@ -51,15 +51,35 @@ class CheckoutController extends Controller
 
             // 2. Simpan Items
             foreach ($cart as $item) {
-                OrderItem::create([
+                $orderItem = OrderItem::create([
                     'order_id' => $order->id,
                     'menu_id'  => $item['id'],
-                    'qty'      => $item['qty'] ?? 1, // Ambil qty asli dari cart
+                    'qty'      => $item['qty'] ?? 1,
                     'price'    => $item['price'],
                     'subtotal' => $item['price'] * ($item['qty'] ?? 1),
                     'notes'    => $item['notes'] ?? null
                 ]);
-                // Jika ada logika OrderItemOption, masukkan di sini
+
+                // 🔥 Simpan opsi menu (select & checkbox/qty) ke OrderItemOption
+                if (!empty($item['options'])) {
+                    foreach ($item['options'] as $optionItemId => $optData) {
+                        $optionItem = MenuOptionItem::find($optionItemId);
+                        if (!$optionItem) continue;
+
+                        $qtyOpt = $optData['qty'] ?? 1;
+
+                        // Buat record sebanyak qty (sinkron dgn pola cashier: 1 record = 1 unit opsi)
+                        for ($i = 0; $i < $qtyOpt; $i++) {
+                            OrderItemOption::create([
+                                'order_item_id' => $orderItem->id,
+                                'menu_option_item_id' => $optionItem->id,
+                                'price' => $optionItem->price,
+                            ]);
+                        }
+
+                        $orderItem->increment('subtotal', $optionItem->price * $qtyOpt);
+                    }
+                }
             }
 
             // 3. Buat Data Payment
@@ -146,8 +166,7 @@ class CheckoutController extends Controller
 
     public function success(Order $order)
     {
-        // Load items, menu, dan table untuk informasi lengkap di struk
-        $order->load(['items.menu', 'table']);
+        $order->load(['items.menu', 'items.options.optionItem.option', 'table']);
 
         return view('customer.payment.success', compact('order'));
     }

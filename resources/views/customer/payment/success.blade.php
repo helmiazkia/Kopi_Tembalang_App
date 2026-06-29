@@ -1,6 +1,6 @@
 <x-layouts.customer :title="'Pesanan Berhasil - #' . $order->id">
     <div class="max-w-md mx-auto p-6 min-h-screen flex flex-col bg-white">
-        
+
         <div class="relative w-20 h-20 mx-auto mt-8 mb-6">
             <div class="absolute inset-0 bg-[#D4E971] rounded-full animate-ping opacity-20"></div>
             <div class="relative w-20 h-20 bg-[#D4E971] rounded-full flex items-center justify-center shadow-lg">
@@ -26,8 +26,8 @@
 
             <div class="relative flex justify-between items-center">
                 <div class="absolute top-1/2 left-0 w-full h-1 bg-white/10 -translate-y-1/2"></div>
-                <div id="progress-line" class="absolute top-1/2 left-0 h-1 bg-[#D4E971] -translate-y-1/2 transition-all duration-1000" 
-                     style="width: {{ $order->status == 'done' ? '100%' : ($order->status == 'paid' ? '50%' : '10%') }}"></div>
+                <div id="progress-line" class="absolute top-1/2 left-0 h-1 bg-[#D4E971] -translate-y-1/2 transition-all duration-1000"
+                    style="width: {{ $order->status == 'done' ? '100%' : ($order->status == 'paid' ? '50%' : '10%') }}"></div>
 
                 <div class="relative flex flex-col items-center gap-2">
                     <div id="step-1" class="w-4 h-4 rounded-full border-4 {{ $order->status != 'pending' ? 'bg-[#D4E971] border-slate-900' : 'bg-slate-800 border-slate-700' }}"></div>
@@ -58,12 +58,45 @@
 
             <div class="space-y-4">
                 @foreach($order->items as $item)
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h4 class="text-[10px] font-black uppercase text-slate-800 leading-none">{{ $item->menu->name }}</h4>
-                        <p class="text-[9px] font-bold text-slate-400 mt-1 italic">{{ $item->qty }}x</p>
+                <div class="border-b border-slate-100 pb-4 last:border-0">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1 pr-3">
+                            <h4 class="text-[10px] font-black uppercase text-slate-800 leading-none">{{ $item->menu->name }}</h4>
+                            <p class="text-[9px] font-bold text-slate-400 mt-1 italic">{{ $item->qty }}x</p>
+                        </div>
+                        <span class="text-[10px] font-black text-slate-900 whitespace-nowrap">
+                            Rp{{ number_format($item->price * $item->qty, 0, ',', '.') }}
+                        </span>
                     </div>
-                    <span class="text-[10px] font-black text-slate-900">Rp{{ number_format($item->subtotal, 0, ',', '.') }}</span>
+
+                    @if($item->options->count() > 0)
+                    <div class="mt-2 pl-1 space-y-1">
+                        @foreach($item->options->groupBy('menu_option_item_id') as $itemOptions)
+                        @php
+                        $optItem = $itemOptions->first()->optionItem;
+                        $qtyOpt = $itemOptions->count();
+                        $lineTotal = ($optItem->price ?? 0) * $qtyOpt;
+                        @endphp
+                        <div class="flex justify-between items-center">
+                            <span class="text-[9px] font-bold text-slate-400">
+                                + {{ $optItem->name ?? '-' }}{{ $qtyOpt > 1 ? ' x' . $qtyOpt : '' }}
+                            </span>
+                            <span class="text-[9px] font-bold text-slate-400 whitespace-nowrap">
+                                {{ $lineTotal > 0 ? 'Rp' . number_format($lineTotal, 0, ',', '.') : 'Gratis' }}
+                            </span>
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
+
+                    @if($item->notes)
+                    <p class="text-[8px] italic text-blue-500 mt-1.5 pl-1">"{{ $item->notes }}"</p>
+                    @endif
+
+                    <div class="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-slate-200">
+                        <span class="text-[8px] font-black uppercase text-slate-400">Subtotal</span>
+                        <span class="text-[9px] font-black text-slate-700">Rp{{ number_format($item->subtotal, 0, ',', '.') }}</span>
+                    </div>
                 </div>
                 @endforeach
             </div>
@@ -77,9 +110,11 @@
         </div>
 
         <div class="mt-8 mb-4 text-center">
-            <a href="{{ route('customer.menu', $order->table_id) }}" 
-               class="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            <a href="{{ route('customer.menu', $order->table_id) }}"
+                class="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
                 Pesan Menu Lain
             </a>
         </div>
@@ -114,7 +149,7 @@
                             progressLine.style.width = '100%';
                             step3.classList.replace('bg-slate-800', 'bg-[#D4E971]');
                             step3.classList.replace('border-slate-700', 'border-slate-900');
-                            
+
                             // Jika sudah done, berhenti polling setelah beberapa saat
                             // clearInterval(checkKitchenStatus); 
                         }

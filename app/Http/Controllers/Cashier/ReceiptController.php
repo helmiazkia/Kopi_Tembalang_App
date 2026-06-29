@@ -9,12 +9,11 @@ class ReceiptController extends Controller
 {
     public function show(Order $order)
     {
-        // Setiap kali halaman struk dibuka, pastikan database tahu ini sudah diprint
         if (!$order->is_printed) {
             $order->update(['is_printed' => true]);
         }
 
-        $order->load('items.menu', 'payment');
+        $order->load('items.menu', 'items.options.optionItem', 'payment');
         return view('cashier.receipt.show', compact('order'));
     }
 }

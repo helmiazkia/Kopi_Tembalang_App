@@ -31,7 +31,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="orders-container">
             @forelse($orders as $order)
             <div class="bg-white rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden border-4 border-transparent hover:border-[#D4E971] transition-all duration-300">
-                
+
                 {{-- CARD HEADER --}}
                 <div class="p-5 {{ $order->order_type == 'takeaway' ? 'bg-orange-500 text-white' : 'bg-[#D4E971] text-slate-900' }} flex justify-between items-center">
                     <div>
@@ -61,14 +61,33 @@
                             <div class="flex justify-between items-start">
                                 <div class="max-w-[85%]">
                                     <p class="font-black text-base text-slate-800 uppercase leading-tight">{{ $item->menu->name }}</p>
-                                    
+
+                                    {{-- OPSI / TOPPING --}}
                                     {{-- OPSI / TOPPING --}}
                                     @if($item->options->count() > 0)
-                                    <div class="flex flex-wrap gap-1 mt-2">
-                                        @foreach($item->options as $option)
-                                        <span class="text-[9px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200">
-                                            + {{ $option->optionItem->name }}
-                                        </span>
+                                    @php
+                                    $groupedOptions = $item->options->groupBy(function ($opt) {
+                                    return $opt->optionItem->option->name ?? 'Opsi';
+                                    });
+                                    @endphp
+
+                                    <div class="mt-2 space-y-2">
+                                        @foreach($groupedOptions as $groupName => $optsInGroup)
+                                        <div>
+                                            <span class="text-[8px] font-black uppercase text-slate-400 tracking-widest block mb-1">{{ $groupName }}</span>
+
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach($optsInGroup->groupBy('menu_option_item_id') as $itemOptions)
+                                                @php
+                                                $optItem = $itemOptions->first()->optionItem;
+                                                $qtyOpt = $itemOptions->count();
+                                                @endphp
+                                                <span class="text-[9px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200">
+                                                    + {{ $optItem->name }}{{ $qtyOpt > 1 ? ' x' . $qtyOpt : '' }}
+                                                </span>
+                                                @endforeach
+                                            </div>
+                                        </div>
                                         @endforeach
                                     </div>
                                     @endif
@@ -128,17 +147,21 @@
         function updateClock() {
             const now = new Date();
             const time = now.getHours().toString().padStart(2, '0') + ":" +
-                         now.getMinutes().toString().padStart(2, '0') + ":" +
-                         now.getSeconds().toString().padStart(2, '0');
+                now.getMinutes().toString().padStart(2, '0') + ":" +
+                now.getSeconds().toString().padStart(2, '0');
             const clockEl = document.getElementById('clock');
-            if(clockEl) clockEl.innerText = time;
+            if (clockEl) clockEl.innerText = time;
         }
         setInterval(updateClock, 1000);
         updateClock();
 
         // 2. AUTO REFRESH (Polling)
-        let currentOrderCount = {{ $orders->count() }};
-        
+        let currentOrderCount = {
+            {
+                $orders - > count()
+            }
+        };
+
         function checkNewOrders() {
             fetch(window.location.href)
                 .then(response => response.text())
@@ -146,13 +169,13 @@
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
                     const newContainer = doc.getElementById('orders-container');
-                    const newCount = doc.querySelectorAll('.order-card-class-selector-if-exist').length; 
+                    const newCount = doc.querySelectorAll('.order-card-class-selector-if-exist').length;
                     // Catatan: Karena kita me-refresh UI secara halus, kita cek jumlah card
-                    
+
                     // Cara termudah: reload jika jumlah berubah untuk memicu bunyi notif
                     // Atau update innerHTML saja:
                     document.getElementById('orders-container').innerHTML = newContainer.innerHTML;
-                    
+
                     // Cek jika jumlah pesanan bertambah (dibandingkan variabel JS)
                     // (Logika reload lebih aman untuk memastikan notifikasi bunyi)
                 })
@@ -161,7 +184,7 @@
 
         // Set refresh setiap 15 detik
         setInterval(() => {
-            window.location.reload(); 
+            window.location.reload();
         }, 15000);
     </script>
 </x-layouts.kitchen>

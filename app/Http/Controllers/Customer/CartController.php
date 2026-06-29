@@ -27,13 +27,17 @@ class CartController extends Controller
 
         $total = 0;
         foreach ($cartData as $item) {
+            $qty = $item['qty'] ?? 1;
             $optionTotal = 0;
+
             if (isset($item['options'])) {
                 foreach ($item['options'] as $opt) {
-                    $optionTotal += $opt['price'];
+                    $optQty = $opt['qty'] ?? 1;
+                    $optionTotal += $opt['price'] * $optQty;
                 }
             }
-            $total += ($item['price'] + $optionTotal);
+
+            $total += ($item['price'] * $qty) + $optionTotal;
         }
 
         // Simpan ke session agar CheckoutController bisa baca

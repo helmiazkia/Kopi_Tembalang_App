@@ -18,7 +18,10 @@ use Carbon\Carbon;
 
 class TopMenusExport implements FromCollection, WithHeadings, WithStyles, WithTitle, WithColumnWidths, WithEvents
 {
+
     private int $totalRows;
+    private int $totalQty = 0;
+    private int $totalPendapatan = 0;
 
     public function __construct(
         private int $month,
@@ -27,7 +30,6 @@ class TopMenusExport implements FromCollection, WithHeadings, WithStyles, WithTi
 
     public function collection()
     {
-        // 🔥 HANYA NOTA BERHASIL (paid, done) - GAGAL TIDAK DIHITUNG
         $data = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('menus', 'order_items.menu_id', '=', 'menus.id')
@@ -44,6 +46,8 @@ class TopMenusExport implements FromCollection, WithHeadings, WithStyles, WithTi
             ->get();
 
         $this->totalRows = $data->count();
+        $this->totalQty = (int) $data->sum('Total_Terjual');
+        $this->totalPendapatan = (int) $data->sum('Total_Pendapatan');
 
         return $data->values()->map(fn($row, $index) => [
             $index + 1,
@@ -155,8 +159,8 @@ class TopMenusExport implements FromCollection, WithHeadings, WithStyles, WithTi
                 // Baris total di paling bawah
                 $totalRow = $lastDataRow + 1;
                 $sheet->setCellValue("B{$totalRow}", 'TOTAL');
-                $sheet->setCellValue("C{$totalRow}", "=SUM(C4:C{$lastDataRow})");
-                $sheet->setCellValue("D{$totalRow}", "=SUM(D4:D{$lastDataRow})");
+                $sheet->setCellValue("C{$totalRow}", $this->totalQty);
+                $sheet->setCellValue("D{$totalRow}", $this->totalPendapatan);
 
                 $sheet->getStyle("A{$totalRow}:D{$totalRow}")->applyFromArray([
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1e293b']],

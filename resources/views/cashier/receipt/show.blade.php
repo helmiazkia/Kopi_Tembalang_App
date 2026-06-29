@@ -1,124 +1,81 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="UTF-8">
-    <title>Struk #{{ $order->id }} - Kopi Tembalang</title>
-    {{-- Mencegah user melakukan zoom di HP kasir --}}
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <title>Struk #{{ $order->id }}</title>
     <style>
-        /* Konfigurasi Ukuran Kertas Thermal (biasanya 58mm atau 80mm) */
-        @page {
-            margin: 0;
+        @page { 
+            size: 58mm auto; 
+            margin: 0; 
         }
 
         body {
-            font-family: 'Courier New', Courier, monospace;
-            width: 280px;
-            /* Standar printer thermal 58mm */
-            margin: 0 auto;
-            padding: 10px;
+            width: 58mm;
+            margin: 0;
+            padding: 8px; /* Padding ditambah agar lebih presisi */
+            font-family: "Courier New", Courier, monospace;
+            font-size: 12px; /* Font utama diperbesar */
+            line-height: 1.3;
             color: #000;
-            font-size: 14px;
-            line-height: 1.2;
         }
 
-        .center {
-            text-align: center;
-        }
-
-        .right {
-            text-align: right;
-        }
-
+        .center { text-align: center; }
+        .bold { font-weight: bold; }
+        .flex { display: flex; justify-content: space-between; }
+        
         .line {
             border-top: 1px dashed #000;
-            margin: 8px 0;
+            margin: 6px 0;
         }
 
-        .flex {
-            display: flex;
-            justify-content: space-between;
-        }
+        .item-block { margin-bottom: 8px; }
+        .item-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; }
+        
+        .opt-group { margin-left: 10px; font-size: 11px; } /* Opsi juga diperbesar */
+        .opt-row { display: flex; justify-content: space-between; }
+        
+        h3 { font-size: 16px; margin: 0 0 4px 0; } /* Judul toko lebih besar */
+        .tiny { font-size: 10px; }
 
-        .small {
-            font-size: 12px;
-        }
-
-        .bold {
-            font-weight: bold;
-        }
-
-        /* Hilangkan margin/padding saat print agar tidak kepotong */
         @media print {
-            body {
-                width: 100%;
-                margin: 0;
-                padding: 5px;
-            }
-
-            .no-print {
-                display: none;
-            }
+            .no-print { display: none !important; }
+            body { width: 100%; }
         }
     </style>
 </head>
 
-<body onload="printStruk()">
-
-    {{-- HEADER --}}
+<body>
     <div class="center">
-        <h3 style="margin-bottom: 5px;">KOPI TEMBALANG</h3>
-        <p class="small">Jl. Tembalang Raya No. XX, Semarang<br>
-            Telp: 0812-XXXX-XXXX</p>
+        <h3>KOPI TEMBALANG</h3>
+        <div class="tiny">
+            Jl. Banjarsari Raya No.53, Tembalang<br>
+            Semarang
+        </div>
     </div>
-
     <div class="line"></div>
 
-    {{-- INFO ORDER --}}
-    <div class="small">
-        <div class="flex">
-            <span>No. Order</span>
-            <span>#{{ $order->id }}</span>
-        </div>
-        <div class="flex">
-            <span>Tanggal</span>
-            <span>{{ $order->created_at->format('d/m/Y H:i') }}</span>
-        </div>
-        <div class="flex">
-            <span>Kasir</span>
-            <span>{{ auth()->user()->name }}</span>
-        </div>
-        <div class="flex">
-            <span>Tipe</span>
-            <span class="bold">{{ strtoupper($order->order_type) }}</span>
-        </div>
-        @if($order->table)
-        <div class="flex">
-            <span>Meja</span>
-            <span class="bold">{{ $order->table->table_number }}</span>
-        </div>
-        @endif
+    <div>
+        <div class="flex"><span>No:</span><span class="bold">#{{ $order->id }}</span></div>
+        <div class="flex"><span>Tgl:</span><span>{{ $order->created_at->format('d/m/y H:i') }}</span></div>
+        <div class="flex"><span>Kasir:</span><span>{{ auth()->user()->name }}</span></div>
+        <div class="flex"><span>Tipe:</span><span class="bold">{{ strtoupper($order->order_type) }}</span></div>
     </div>
-
     <div class="line"></div>
 
-    {{-- ITEMS --}}
     @foreach($order->items as $item)
-    <div style="margin-bottom: 8px;">
-        <div class="bold uppercase">{{ $item->menu->name }}</div>
-
+    <div class="item-block">
+        <div class="bold">{{ $item->menu->name }}</div>
+        
         @foreach($item->options as $opt)
-        <div class="small" style="padding-left: 10px;">
-            + {{ $opt->menuOptionItem->name ?? '' }}
-            @if($opt->price > 0)
-            ({{ number_format($opt->price) }})
-            @endif
+        <div class="opt-group">
+            <div class="opt-row">
+                <span>+ {{ $opt->optionItem->name }}</span>
+                <span>{{ number_format($opt->optionItem->price ?? 0) }}</span>
+            </div>
         </div>
         @endforeach
 
-        <div class="flex small">
+        <div class="item-total">
             <span>{{ $item->qty }} x {{ number_format($item->price) }}</span>
             <span>{{ number_format($item->subtotal) }}</span>
         </div>
@@ -127,54 +84,29 @@
 
     <div class="line"></div>
 
-    {{-- TOTAL --}}
-    <div class="flex" style="font-size: 16px;">
+    <div class="flex" style="font-size: 14px;">
         <span class="bold">TOTAL</span>
         <span class="bold">Rp {{ number_format($order->total_price) }}</span>
     </div>
 
-    {{-- Tambahkan Info Metode Pembayaran --}}
-    <div class="flex small" style="margin-top: 4px;">
-        <span>Metode Bayar</span>
-        <span>{{ strtoupper($order->payment->method ?? 'Cash') }}</span>
-    </div>
-
     <div class="line"></div>
 
-    {{-- FOOTER --}}
-    <div class="center small">
-        <p>Follow us on Instagram:<br><b>@kopitembalang</b></p>
-        <p>Terima kasih atas kunjungannya ☕</p>
-        <p>-- LUNAS --</p>
+    <div class="center tiny">
+        <div>Terima Kasih ☕</div>
+        <div class="bold">===== LUNAS =====</div>
     </div>
 
-    {{-- Tombol bantuan jika auto-print gagal --}}
     <div class="no-print center" style="margin-top: 20px;">
-        <button onclick="window.print()" style="padding: 10px; cursor: pointer;">Cetak Ulang</button>
-        <a href="/cashier/orders" style="display: block; margin-top: 10px; color: blue;">Kembali ke Kasir</a>
+        <button onclick="window.print()" style="padding: 8px 16px; cursor: pointer;">Cetak Ulang</button>
     </div>
 
     <script>
-        function printStruk() {
-            // Beri jeda sedikit agar CSS render sempurna sebelum print
-            setTimeout(() => {
-                window.print();
-            }, 500);
-
-            // Otomatis balik ke kasir SETELAH dialog print ditutup
+        window.onload = function() {
+            window.print();
             window.onafterprint = function() {
                 window.location.href = "/cashier/orders";
             };
-
-            // Backup jika onafterprint tidak jalan di browser tertentu
-            setTimeout(() => {
-                // Hanya redirect jika tidak sedang dalam dialog print
-                // (biasanya 5 detik sudah cukup untuk user berinteraksi)
-                // window.location.href = "/cashier/orders"; 
-            }, 10000);
         }
     </script>
-
 </body>
-
 </html>
