@@ -45,7 +45,7 @@
             margin-bottom: 14px;
         }
         .summary-table td {
-            width: 25%;
+            width: 20%;
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 6px;
@@ -76,6 +76,9 @@
         .summary-table .omzet-cell .value {
             color: #d4e971;
         }
+        .summary-table .warn-cell .value {
+            font-size: 12px;
+        }
 
         /* Main table */
         table.data {
@@ -101,6 +104,9 @@
         table.data tbody tr:nth-child(even) {
             background-color: #f8fafc;
         }
+        table.data tbody tr.not-counted {
+            color: #94a3b8;
+        }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .badge {
@@ -115,7 +121,9 @@
         .badge-online { background-color: #e0e7ff; color: #4338ca; }
         .badge-paid { background-color: #d1fae5; color: #047857; }
         .badge-preparing { background-color: #fef3c7; color: #92400e; }
+        .badge-pending { background-color: #fefce8; color: #a16207; }
         .badge-done { background-color: #dbeafe; color: #1e40af; }
+        .badge-failed { background-color: #fee2e2; color: #b91c1c; }
         .badge-cancelled { background-color: #fee2e2; color: #b91c1c; }
         .badge-default { background-color: #f1f5f9; color: #64748b; }
 
@@ -163,6 +171,10 @@
                 <p class="label">Nota Berhasil</p>
                 <p class="value">{{ $summary['count_orders'] }} Nota</p>
             </td>
+            <td class="warn-cell">
+                <p class="label">Pending / Gagal</p>
+                <p class="value">{{ $summary['count_pending'] }} / {{ $summary['count_failed'] }}</p>
+            </td>
             <td class="omzet-cell">
                 <p class="label">Total Omzet</p>
                 <p class="value">Rp {{ number_format($summary['total_omzet']) }}</p>
@@ -177,9 +189,9 @@
                 <th style="width:8%;">Tanggal</th>
                 <th style="width:6%;">Jam</th>
                 <th style="width:7%;">Order ID</th>
-                <th style="width:16%;">Pelanggan / Meja</th>
-                <th style="width:14%;">Kasir</th>
-                <th style="width:10%;">Metode</th>
+                <th style="width:15%;">Pelanggan / Meja</th>
+                <th style="width:13%;">Kasir</th>
+                <th style="width:9%;">Metode</th>
                 <th style="width:10%;">Status</th>
                 <th class="text-right" style="width:12%;">Total (Rp)</th>
             </tr>
@@ -187,16 +199,19 @@
         <tbody>
             @forelse($orders as $index => $order)
                 @php
+                    $isCounted = in_array($order->status, ['paid', 'done']);
                     $statusClass = match($order->status) {
                         'paid' => 'badge-paid',
                         'preparing' => 'badge-preparing',
+                        'pending' => 'badge-pending',
                         'done' => 'badge-done',
+                        'failed' => 'badge-failed',
                         'cancelled' => 'badge-cancelled',
                         default => 'badge-default',
                     };
                     $methodClass = $order->payment?->method === 'cash' ? 'badge-cash' : 'badge-online';
                 @endphp
-                <tr>
+                <tr class="{{ !$isCounted ? 'not-counted' : '' }}">
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $order->created_at->format('d/m/Y') }}</td>
                     <td>{{ $order->created_at->format('H:i') }}</td>
@@ -210,7 +225,14 @@
                     <td>{{ $order->cashier?->name ?? 'Self-Order' }}</td>
                     <td>
                         @if($order->payment)
-                            <span class="badge {{ $methodClass }}">{{ $order->payment->method }}</span>
+                            @if($order->payment->method === 'cash')
+                                <span class="badge badge-cash">Cash</span>
+                            @else
+                                <span class="badge badge-online">Online Payment</span><br>
+                                <span style="font-size: 7px; color: #4338ca; text-transform: uppercase; font-weight: bold; margin-top: 2px; display: block;">
+                                    {{ $order->payment->channel ?? $order->payment->method }}
+                                </span>
+                            @endif
                         @else
                             <span class="badge badge-cancelled">Belum Bayar</span>
                         @endif
@@ -229,16 +251,16 @@
         @if($orders->count() > 0)
         <tfoot>
             <tr>
-                <td colspan="4">TOTAL TRANSAKSI</td>
-                <td colspan="4" class="text-center">{{ $orders->count() }} Nota</td>
-                <td class="text-right">Rp {{ number_format($orders->sum('total_price')) }}</td>
+                <td colspan="4">TOTAL TRANSAKSI BERHASIL</td>
+                <td colspan="4" class="text-center">{{ $summary['count_orders'] }} / {{ $orders->count() }} Nota</td>
+                <td class="text-right">Rp {{ number_format($summary['total_omzet']) }}</td>
             </tr>
         </tfoot>
         @endif
     </table>
 
     <p class="footer-note">
-        Digenerate pada: {{ now()->format('d/m/Y H:i') }} | Kopi Tembalang
+        Digenerate pada: {{ now()->format('d/m/Y H:i') }} | Kopi Tembalang | Status pending/gagal/batal tidak dihitung ke omzet
     </p>
 
 </body>

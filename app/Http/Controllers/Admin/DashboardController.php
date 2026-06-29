@@ -35,16 +35,29 @@ class DashboardController extends Controller
             ->whereNull('cashier_id')
             ->count();
 
+        // 🔥 NOTA BERHASIL & GAGAL
+        $notaBerhasil = Order::whereMonth('created_at', $filterMonth)
+            ->whereYear('created_at', $filterYear)
+            ->whereIn('status', ['paid', 'done'])
+            ->count();
+
+        $notaGagal = Order::whereMonth('created_at', $filterMonth)
+            ->whereYear('created_at', $filterYear)
+            ->whereIn('status', ['cancelled'])
+            ->count();
+
         $totalItemsSold = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->whereMonth('orders.created_at', $filterMonth)
             ->whereYear('orders.created_at', $filterYear)
-            ->whereIn('orders.status', ['paid', 'preparing', 'done'])
+            ->whereIn('orders.status', ['paid', 'done'])
             ->sum('order_items.qty');
 
         // --- 2. DATA GRAFIK ---
+        // 🔥 HANYA NOTA BERHASIL (paid, done) - GAGAL TIDAK DIHITUNG
         $busyDaysRaw = Order::whereMonth('created_at', $filterMonth)
             ->whereYear('created_at', $filterYear)
+            ->whereIn('status', ['paid', 'done'])
             ->select(DB::raw('DAYNAME(created_at) as day'), DB::raw('count(*) as count'))
             ->groupBy('day')
             ->pluck('count', 'day')
@@ -57,8 +70,10 @@ class DashboardController extends Controller
         }
         $dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
+        // 🔥 HANYA NOTA BERHASIL (paid, done) - GAGAL TIDAK DIHITUNG
         $busyHours = Order::whereMonth('created_at', $filterMonth)
             ->whereYear('created_at', $filterYear)
+            ->whereIn('status', ['paid', 'done'])
             ->select(DB::raw('HOUR(created_at) as hour'), DB::raw('count(*) as count'))
             ->groupBy('hour')
             ->pluck('count', 'hour')
@@ -70,12 +85,13 @@ class DashboardController extends Controller
         }
 
         // --- 3. TOP MENU ---
+        // 🔥 HANYA NOTA BERHASIL (paid, done) - GAGAL TIDAK DIHITUNG
         $topMenus = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('menus', 'order_items.menu_id', '=', 'menus.id')
             ->whereMonth('orders.created_at', $filterMonth)
             ->whereYear('orders.created_at', $filterYear)
-            ->whereIn('orders.status', ['paid', 'preparing', 'done'])
+            ->whereIn('orders.status', ['paid', 'done'])
             ->select('menus.name', DB::raw('SUM(order_items.qty) as total_qty'))
             ->groupBy('menus.name')
             ->orderBy('total_qty', $menuSort === 'top' ? 'DESC' : 'ASC')
@@ -83,6 +99,7 @@ class DashboardController extends Controller
             ->get();
 
         // --- 4. TOP OPTION ITEMS ---
+        // 🔥 HANYA NOTA BERHASIL (paid, done) - GAGAL TIDAK DIHITUNG
         $topOptions = DB::table('order_item_options')
             ->join('order_items', 'order_item_options.order_item_id', '=', 'order_items.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
@@ -90,7 +107,7 @@ class DashboardController extends Controller
             ->join('menu_options', 'menu_option_items.menu_option_id', '=', 'menu_options.id')
             ->whereMonth('orders.created_at', $filterMonth)
             ->whereYear('orders.created_at', $filterYear)
-            ->whereIn('orders.status', ['paid', 'preparing', 'done'])
+            ->whereIn('orders.status', ['paid', 'done'])
             ->select(
                 'menu_options.name as group_name',
                 'menu_option_items.name as option_name',
@@ -108,6 +125,8 @@ class DashboardController extends Controller
             'totalRevenue',
             'orderKasir',
             'orderMandiri',
+            'notaBerhasil',
+            'notaGagal',
             'totalItemsSold',
             'dayLabels',
             'busyDaysValues',

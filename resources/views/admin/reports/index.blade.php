@@ -157,10 +157,18 @@
 
                         <td>
                             @if($order->payment)
-                            <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase
-                                        {{ $order->payment->method === 'cash' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700' }}">
-                                {{ $order->payment->method }}
+                            @if($order->payment->method === 'cash')
+                            <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase bg-emerald-100 text-emerald-700">
+                                Cash
                             </span>
+                            @else
+                            <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 block">
+                                Online Payment
+                            </span>
+                            <span class="text-[8px] text-indigo-600 font-bold mt-1 uppercase tracking-wider">
+                                {{ $order->payment->channel ?? $order->payment->method }}
+                            </span>
+                            @endif
                             @else
                             <span class="text-[9px] font-black text-rose-400 uppercase">Belum Bayar</span>
                             @endif

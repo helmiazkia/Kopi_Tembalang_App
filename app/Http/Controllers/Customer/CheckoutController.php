@@ -70,7 +70,7 @@ class CheckoutController extends Controller
                 'method'         => $request->payment_method,
                 'amount'         => $totalPrice,
                 'status'         => 'pending',
-                'expired_at'     => Carbon::now()->addMinutes(15)
+                'expired_at'     => Carbon::now()->addMinutes(12)
             ]);
 
             // 4. LOGIKA REDIRECT
@@ -80,15 +80,25 @@ class CheckoutController extends Controller
                 Config::$serverKey = config('midtrans.serverKey');
                 Config::$isProduction = config('midtrans.isProduction', false);
 
+
                 $params = [
                     'transaction_details' => [
                         'order_id'     => $transactionId,
                         'gross_amount' => (int) $totalPrice,
                     ],
+
                     'customer_details' => [
                         'first_name' => $order->customer_name,
                         'email'      => $order->email,
                         'phone'      => $order->phone,
+                    ],
+
+                    'enabled_payments' => ['qris', 'gopay', 'shopeepay'],
+
+                    'expiry' => [
+                        'start_time' => now()->format('Y-m-d H:i:s O'),
+                        'unit'       => 'minute',
+                        'duration'   => 12,
                     ],
                 ];
 
@@ -120,6 +130,18 @@ class CheckoutController extends Controller
 
     public function checkStatus(Order $order)
     {
+        // 🔥 AUTO-CANCEL SEMUA EXPIRED PAYMENTS
+        \App\Models\Payment::cancelAllExpired();
+
+        $order->load('payment');
+
+        // 🔥 AUTO-CHECK EXPIRATION UNTUK ORDER INI JUGA
+        // Jika pembayaran masih pending dan waktu sudah habis, ubah status ke cancelled
+        if ($order->payment && $order->payment->status === 'pending' && $order->payment->isExpired()) {
+            $order->payment->update(['status' => 'expired']);
+            $order->update(['status' => 'cancelled']);
+        }
+
         return response()->json(['status' => $order->status]);
     }
 

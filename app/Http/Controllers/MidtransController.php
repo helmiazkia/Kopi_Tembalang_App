@@ -15,6 +15,12 @@ class MidtransController extends Controller
         Config::$isProduction = config('midtrans.isProduction', true);
 
         try {
+            // 🔥 AUTO-CANCEL EXPIRED PAYMENTS DULUAN
+            $expiredCount = \App\Models\Payment::cancelAllExpired();
+            if ($expiredCount > 0) {
+                Log::info("Auto-cancelled $expiredCount expired payments");
+            }
+
             $data = $request->all();
             
             // 🔥 SOLUSI TIMEOUT: Langsung beri respon 200 jika ini adalah notifikasi tes dashboard

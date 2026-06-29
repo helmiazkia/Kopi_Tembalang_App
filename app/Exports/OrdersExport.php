@@ -20,6 +20,7 @@ use Carbon\Carbon;
 class OrdersExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle, WithColumnWidths, WithEvents
 {
     private int $totalRows = 0;
+    private int $successRows = 0;
 
     public function __construct(
         protected string $startDate,
@@ -37,6 +38,9 @@ class OrdersExport implements FromCollection, WithHeadings, WithMapping, WithSty
 
     public function collection()
     {
+        // 🔥 AUTO-CANCEL EXPIRED PAYMENTS DULUAN
+        \App\Models\Payment::cancelAllExpired();
+
         $data = Order::with(['payment', 'cashier', 'table'])
             ->whereBetween('created_at', [
                 "{$this->startDate} 00:00:00",
@@ -45,7 +49,8 @@ class OrdersExport implements FromCollection, WithHeadings, WithMapping, WithSty
             ->orderBy('created_at')
             ->get();
 
-        $this->totalRows = $data->count();
+        $this->totalRows   = $data->count();
+        $this->successRows = $data->whereIn('status', ['paid', 'done'])->count();
 
         return $data;
     }
@@ -78,13 +83,23 @@ class OrdersExport implements FromCollection, WithHeadings, WithMapping, WithSty
 
     public function map($order): array
     {
+        $paymentMethod = '-';
+        if ($order->payment) {
+            if ($order->payment->method === 'cash') {
+                $paymentMethod = 'CASH';
+            } else {
+                $channel = strtoupper($order->payment->channel ?? $order->payment->method);
+                $paymentMethod = "ONLINE PAYMENT - {$channel}";
+            }
+        }
+
         return [
             $order->created_at->format('d/m/Y'),
             $order->created_at->format('H:i'),
             '#' . $order->id,
             strtoupper($order->customer_name),
             $order->cashier?->name ?? 'Self-Order',
-            strtoupper($order->payment?->method ?? '-'),
+            $paymentMethod,
             strtoupper($order->status),
             (int) $order->total_price,
         ];
@@ -184,7 +199,9 @@ class OrdersExport implements FromCollection, WithHeadings, WithMapping, WithSty
                     $color  = match ($status) {
                         'paid'      => 'D1FAE5', // emerald-100
                         'preparing' => 'FEF3C7', // amber-100
+                        'pending'   => 'FEF9C3', // amber-50/100
                         'done'      => 'DBEAFE', // blue-100
+                        'failed'    => 'FEE2E2', // rose-100
                         'cancelled' => 'FEE2E2', // rose-100
                         default     => 'F1F5F9', // slate-100
                     };
@@ -217,10 +234,12 @@ class OrdersExport implements FromCollection, WithHeadings, WithMapping, WithSty
                 ]);
 
                 // ── Baris Total ───────────────────────────────────────
+                // Hanya transaksi berstatus 'paid' / 'done' yang dihitung ke omzet.
                 $totalRow = $lastDataRow + 1;
-                $sheet->setCellValue("D{$totalRow}", 'TOTAL TRANSAKSI');
-                $sheet->setCellValue("G{$totalRow}", $this->totalRows . ' Nota');
-                $totalAmount = Order::with(['payment', 'cashier', 'table'])
+                $sheet->setCellValue("D{$totalRow}", 'TOTAL TRANSAKSI BERHASIL');
+                $sheet->setCellValue("G{$totalRow}", $this->successRows . ' / ' . $this->totalRows . ' Nota');
+
+                $totalAmount = Order::whereIn('status', ['paid', 'done'])
                     ->whereBetween('created_at', [
                         "{$this->startDate} 00:00:00",
                         "{$this->endDate} 23:59:59",
@@ -246,7 +265,10 @@ class OrdersExport implements FromCollection, WithHeadings, WithMapping, WithSty
                 // ── Footer timestamp ──────────────────────────────────
                 $footerRow = $totalRow + 2;
                 $sheet->mergeCells("A{$footerRow}:H{$footerRow}");
-                $sheet->setCellValue("A{$footerRow}", 'Digenerate pada: ' . now()->format('d/m/Y H:i') . '  |  Kopi Tembalang');
+                $sheet->setCellValue(
+                    "A{$footerRow}",
+                    'Digenerate pada: ' . now()->format('d/m/Y H:i') . '  |  Kopi Tembalang  |  Status pending/gagal/batal tidak dihitung ke omzet'
+                );
                 $sheet->getStyle("A{$footerRow}")->applyFromArray([
                     'font' => ['italic' => true, 'size' => 9, 'color' => ['rgb' => '94A3B8'], 'name' => 'Arial'],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],

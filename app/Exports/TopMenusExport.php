@@ -27,12 +27,13 @@ class TopMenusExport implements FromCollection, WithHeadings, WithStyles, WithTi
 
     public function collection()
     {
+        // 🔥 HANYA NOTA BERHASIL (paid, done) - GAGAL TIDAK DIHITUNG
         $data = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('menus', 'order_items.menu_id', '=', 'menus.id')
             ->whereMonth('orders.created_at', $this->month)
             ->whereYear('orders.created_at', $this->year)
-            ->whereIn('orders.status', ['paid', 'preparing', 'done'])
+            ->whereIn('orders.status', ['paid', 'done'])
             ->select(
                 'menus.name as Menu',
                 DB::raw('SUM(order_items.qty) as Total_Terjual'),

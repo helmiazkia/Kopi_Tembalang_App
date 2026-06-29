@@ -102,17 +102,27 @@ class OrderController extends Controller
             Config::$serverKey = config('midtrans.serverKey');
             Config::$isProduction = config('midtrans.isProduction', false);
 
+
             $params = [
                 'transaction_details' => [
                     'order_id' => $transactionId,
                     'gross_amount' => (int) $totalTotal,
                 ],
+
                 'customer_details' => [
                     'first_name' => $order->customer_name,
                     'email' => $order->email,
                 ],
-                'enabled_payments' => ['qris', 'gopay', 'shopeepay']
+
+                'enabled_payments' => ['qris', 'gopay', 'shopeepay'],
+
+                'expiry' => [
+                    'start_time' => now()->format('Y-m-d H:i:s O'),
+                    'unit'       => 'minute',
+                    'duration'   => 12,
+                ],
             ];
+
 
             $snapToken = Snap::getSnapToken($params);
             $payment->update(['snap_token' => $snapToken]);

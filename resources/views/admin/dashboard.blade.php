@@ -8,27 +8,35 @@
             <h2 class="text-2xl font-black text-slate-900 tracking-tight">Ringkasan Bisnis Bulanan</h2>
         </div>
 
-        <form action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-wrap gap-3 w-full lg:w-auto">
-            <select name="month" class="select select-bordered bg-white border-slate-200 text-slate-600 rounded-2xl text-sm font-semibold">
-                @foreach(range(1, 12) as $m)
-                <option value="{{ $m }}" {{ $filterMonth == $m ? 'selected' : '' }}>
-                    {{ date('F', mktime(0, 0, 0, $m, 1)) }}
-                </option>
-                @endforeach
-            </select>
-            <select name="year" class="select select-bordered bg-white border-slate-200 text-slate-600 rounded-2xl text-sm font-semibold">
-                @foreach(range(now()->year - 2, now()->year) as $y)
-                <option value="{{ $y }}" {{ $filterYear == $y ? 'selected' : '' }}>{{ $y }}</option>
-                @endforeach
-            </select>
-            <button type="submit" class="btn bg-slate-900 hover:bg-slate-700 text-[#D4E971] border-none rounded-2xl px-8 font-black text-xs tracking-widest transition-all duration-300">
-                Terapkan
-            </button>
-        </form>
+        <div class="flex flex-col lg:flex-row gap-3 w-full lg:w-auto">
+            <form action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-wrap gap-3 w-full lg:w-auto">
+                <select name="month" class="select select-bordered bg-white border-slate-200 text-slate-600 rounded-2xl text-sm font-semibold">
+                    @foreach(range(1, 12) as $m)
+                    <option value="{{ $m }}" {{ $filterMonth == $m ? 'selected' : '' }}>
+                        {{ date('F', mktime(0, 0, 0, $m, 1)) }}
+                    </option>
+                    @endforeach
+                </select>
+                <select name="year" class="select select-bordered bg-white border-slate-200 text-slate-600 rounded-2xl text-sm font-semibold">
+                    @foreach(range(now()->year - 2, now()->year) as $y)
+                    <option value="{{ $y }}" {{ $filterYear == $y ? 'selected' : '' }}>{{ $y }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="btn bg-slate-900 hover:bg-slate-700 text-[#D4E971] border-none rounded-2xl px-8 font-black text-xs tracking-widest transition-all duration-300">
+                    Terapkan
+                </button>
+            </form>
+
+            {{-- Export Button --}}
+            <a href="{{ route('admin.dashboard.exportTopMenus', ['month' => $filterMonth, 'year' => $filterYear]) }}" 
+                class="btn bg-emerald-600 hover:bg-emerald-700 text-white border-none rounded-2xl px-6 font-black text-xs tracking-widest shadow-sm shadow-emerald-600/20 transition-all duration-300">
+                Export Excel
+            </a>
+        </div>
     </div>
 
     {{-- Kartu Statistik Bulanan --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
 
         {{-- Omzet --}}
         <div class="bg-slate-900 p-7 rounded-3xl border border-slate-800 relative overflow-hidden">
@@ -85,6 +93,38 @@
                 <h3 class="text-2xl font-black text-slate-800">
                     {{ number_format($totalItemsSold ?? 0) }}
                     <span class="text-xs font-medium text-slate-400">Item</span>
+                </h3>
+            </div>
+        </div>
+
+        {{-- Nota Berhasil --}}
+        <div class="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
+            <div class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nota Berhasil</p>
+                <h3 class="text-2xl font-black text-slate-800">
+                    {{ $notaBerhasil ?? 0 }}
+                    <span class="text-xs font-medium text-slate-400">Nota</span>
+                </h3>
+            </div>
+        </div>
+
+        {{-- Nota Gagal --}}
+        <div class="bg-white p-7 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
+            <div class="p-4 bg-rose-50 text-rose-600 rounded-2xl shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m2-2l2 2m-2-2l-2-2m0 0l2-2m-2 2l2 2M9 3h6a2 2 0 012 2v14a2 2 0 01-2 2H9a2 2 0 01-2-2V5a2 2 0 012-2z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nota Gagal/Batal</p>
+                <h3 class="text-2xl font-black text-slate-800">
+                    {{ $notaGagal ?? 0 }}
+                    <span class="text-xs font-medium text-slate-400">Nota</span>
                 </h3>
             </div>
         </div>
