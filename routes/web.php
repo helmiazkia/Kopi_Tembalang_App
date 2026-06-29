@@ -120,9 +120,17 @@ Route::middleware('auth')->group(function () {
         ]);
     })->name('api.check.payment');
 
-// 🔥 PAYMENT - AUTO CANCEL EXPIRED
-Route::post('/api/payment/check-expired/{order}', [\App\Http\Controllers\PaymentController::class, 'checkAndCancelExpired'])
-    ->name('api.payment.checkExpired');
+    // 🔥 PAYMENT - AUTO CANCEL EXPIRED
+    Route::post('/api/payment/check-expired/{order}', [\App\Http\Controllers\PaymentController::class, 'checkAndCancelExpired'])
+        ->name('api.payment.checkExpired');
+
+}); // End Middleware Auth
+
+
+// ================= CUSTOMER (Public / Tanpa Login) =================
+Route::name('customer.')->group(function () {
+    // Menu
+    Route::get('/menu/{table}', [CustomerOrderController::class, 'index'])->name('menu');
     Route::get('/menu/{table}/{menu}', [CustomerOrderController::class, 'show'])->name('menu.show');
 
     // Cart

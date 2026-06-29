@@ -93,7 +93,6 @@ class CheckoutController extends Controller
                         'phone'      => $order->phone,
                     ],
 
-                    'enabled_payments' => ['qris', 'gopay', 'shopeepay'],
 
                     'expiry' => [
                         'start_time' => now()->format('Y-m-d H:i:s O'),

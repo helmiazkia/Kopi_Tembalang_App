@@ -114,8 +114,6 @@ class OrderController extends Controller
                     'email' => $order->email,
                 ],
 
-                'enabled_payments' => ['qris', 'gopay', 'shopeepay'],
-
                 'expiry' => [
                     'start_time' => now()->format('Y-m-d H:i:s O'),
                     'unit'       => 'minute',
