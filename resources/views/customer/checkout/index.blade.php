@@ -66,7 +66,7 @@
                     <p class="text-[9px] font-black uppercase text-slate-400 text-center tracking-[0.2em]">Pilih Cara Bayar</p>
                     <div class="grid grid-cols-2 gap-3">
                         <label class="relative cursor-pointer">
-                            <input type="radio" name="payment_method" value="qris" class="peer hidden" checked>
+                            <input type="radio" name="payment_method" value="Online Payment" class="peer hidden" checked>
                             <div class="p-4 bg-white border-2 border-slate-100 rounded-2xl peer-checked:border-[#D4E971] peer-checked:bg-[#D4E971]/5 transition-all flex flex-col items-center gap-2">
                                 <span class="text-2xl">📱</span>
                                 <span class="text-[9px] font-black uppercase text-slate-500 peer-checked:text-slate-900 tracking-tighter">Bayar Online</span>
@@ -135,7 +135,7 @@
             }
 
             document.getElementById('display_name').innerText = name;
-            document.getElementById('display_method').innerText = method === 'qris' ? 'QRIS / Digital' : 'Tunai di Kasir';
+            document.getElementById('display_method').innerText = method === 'Online Payment' ? 'Bayar Online' : 'Tunai di Kasir';
 
             const modal = document.getElementById('confirmModal');
             modal.classList.remove('hidden');

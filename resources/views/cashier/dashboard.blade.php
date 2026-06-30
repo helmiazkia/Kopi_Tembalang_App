@@ -67,9 +67,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
                 </div>
-                <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-xl uppercase tracking-widest">QRIS</span>
+                <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-xl uppercase tracking-widest">Online Payment</span>
             </div>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Online Payment</p>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pembayaran Online</p>
             <h2 class="text-2xl font-black text-slate-900 tracking-tight">Rp {{ number_format($totalOnline) }}</h2>
         </div>
 

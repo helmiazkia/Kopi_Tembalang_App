@@ -392,7 +392,7 @@
                     class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl border-2 border-slate-100
                        hover:border-blue-400 hover:bg-blue-50/50 transition-all text-left">
                     <span class="text-xl">📱</span>
-                    <span class="font-black uppercase text-xs text-slate-700">QRIS / Snap</span>
+                    <span class="font-black uppercase text-xs text-slate-700">Online Payment</span>
                 </button>
                 <button onclick="cancelPayment()"
                     class="w-full mt-2 text-[9px] font-black uppercase tracking-widest text-slate-300 hover:text-red-400 transition-colors">
