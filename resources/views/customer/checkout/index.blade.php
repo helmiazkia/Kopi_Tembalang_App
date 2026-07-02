@@ -135,7 +135,7 @@
             }
 
             document.getElementById('display_name').innerText = name;
-            document.getElementById('display_method').innerText = method === 'qris' ? 'QRIS / Digital' : 'Tunai di Kasir';
+            document.getElementById('display_method').innerText = method === 'qris' ? 'Pembayaran Online' : 'Tunai di Kasir';
 
             const modal = document.getElementById('confirmModal');
             modal.classList.remove('hidden');
